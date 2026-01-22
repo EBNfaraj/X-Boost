@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X-Boost Pro | نظام الدعم الذكي</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="brand">
+            <i class="fas fa-rocket"></i> X-Boost
+        </div>
+        <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">
+            <i class="fas fa-chart-line"></i> لوحة التحكم
+        </a>
+        <a href="/accounts" class="nav-link {% if request.path == '/accounts' %}active{% endif %}">
+            <i class="fas fa-users"></i> الحسابات
+        </a>
+        <a href="/health" class="nav-link {% if request.path == '/health' %}active{% endif %}">
+            <i class="fas fa-heartbeat"></i> الفحص الصحي
+        </a>
+        <a href="/support" class="nav-link {% if request.path == '/support' %}active{% endif %}">
+            <i class="fas fa-bolt"></i> الدعم والمهام
+        </a>
+        <a href="/auto_support" class="nav-link {% if request.path == '/auto_support' %}active{% endif %}">
+            <i class="fas fa-satellite"></i> الدعم التلقائي
+        </a>
+        <a href="/campaigns" class="nav-link {% if request.path == '/campaigns' %}active{% endif %}">
+            <i class="fas fa-layer-group"></i> الحملات
+        </a>
+        <a href="/proxies" class="nav-link {% if request.path == '/proxies' %}active{% endif %}">
+            <i class="fas fa-network-wired"></i> البروكسيات
+        </a>
+
+        <a href="/settings" class="nav-link {% if request.path == '/settings' %}active{% endif %}">
+            <i class="fas fa-cog"></i> الإعدادات
+        </a>
+    </div>
+
+    <div class="main-content">
+        {% block content %}{% endblock %}
+    </div>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

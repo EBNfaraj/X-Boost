@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Header -->
+    <div class="header">
+        <div>
+            <h1>لوحة التحكم</h1>
+            <p style="color: var(--text-muted); margin-top: 5px;">مرحباً بك في نظام X-Boost Pro</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <div id="refresh-indicator" class="refresh-indicator">
+                <div class="dot"></div>
+                <span class="refresh-text">تحديث تلقائي</span>
+            </div>
+            <span class="status-active"><i class="fas fa-circle"></i> النظام يعمل</span>
+        </div>
+    </div>
+
+    <!-- KPI Cards Row -->
+    <div class="dashboard-row four-cols">
+        <!-- Active Accounts -->
+        <div class="kpi-card green">
+            <div class="kpi-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="kpi-value">
+                <span id="kpi-accounts">{{ active_accounts }}</span>
+                <span id="trend-accounts" class="trend"></span>
+            </div>
+            <div class="kpi-label">الحسابات النشطة</div>
+            <div class="kpi-progress">
+                <div id="progress-accounts" class="kpi-progress-bar" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Total Actions -->
+        <div class="kpi-card blue">
+            <div class="kpi-icon">
+                <i class="fas fa-bolt"></i>
+            </div>
+            <div class="kpi-value">
+                <span id="kpi-actions">{{ total_actions }}</span>
+                <span id="trend-actions" class="trend"></span>
+            </div>
+            <div class="kpi-label">إجمالي العمليات</div>
+            <div class="kpi-progress">
+                <div id="progress-actions" class="kpi-progress-bar" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Pending Tasks -->
+        <div class="kpi-card orange">
+            <div class="kpi-icon">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="kpi-value">
+                <span id="kpi-pending">{{ pending_tasks }}</span>
+            </div>
+            <div class="kpi-label">مهام قيد الانتظار</div>
+            <div class="kpi-progress">
+                <div id="progress-pending" class="kpi-progress-bar" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Success Rate -->
+        <div class="kpi-card purple">
+            <div class="kpi-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="kpi-value">
+                <span id="kpi-success">{{ success_rate }}</span>%
+                <span id="trend-success" class="trend"></span>
+            </div>
+            <div class="kpi-label">نسبة النجاح</div>
+            <div class="kpi-progress">
+                <div id="progress-success" class="kpi-progress-bar" style="width: {{ success_rate }}%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="dashboard-row two-cols">
+        <!-- Accounts Distribution Chart -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3 class="chart-title">
+                    <i class="fas fa-pie-chart"></i>
+                    توزيع الحسابات
+                </h3>
+            </div>
+            <div class="chart-container">
+                <canvas id="accountsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Daily Activity Chart -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3 class="chart-title">
+                    <i class="fas fa-chart-area"></i>
+                    النشاط اليومي
+                </h3>
+            </div>
+            <div class="chart-container">
+                <canvas id="activityChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tasks Chart (Full Width) -->
+    <div class="dashboard-row">
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3 class="chart-title">
+                    <i class="fas fa-tasks"></i>
+                    حالة المهام الشهرية
+                </h3>
+            </div>
+            <div class="chart-container" style="height: 200px;">
+                <canvas id="tasksChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Links & Live Status Row -->
+    <div class="dashboard-row two-cols">
+        <!-- Quick Links -->
+        <div class="quick-links-card">
+            <div class="section-header">
+                <h3 class="section-title">
+                    <i class="fas fa-rocket" style="color: var(--primary);"></i>
+                    روابط سريعة
+                </h3>
+            </div>
+            <div class="quick-links-grid">
+                <a href="/support" class="quick-link primary">
+                    <div class="link-icon">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <span class="link-title">إنشاء مهمة جديدة</span>
+                </a>
+                <a href="/health" class="quick-link success">
+                    <div class="link-icon">
+                        <i class="fas fa-heartbeat"></i>
+                    </div>
+                    <span class="link-title">فحص صحي سريع</span>
+                </a>
+                <a href="/accounts" class="quick-link purple">
+                    <div class="link-icon">
+                        <i class="fas fa-users-cog"></i>
+                    </div>
+                    <span class="link-title">إدارة الحسابات</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Live Status -->
+        <div class="live-status-card">
+            <div class="section-header">
+                <h3 class="section-title">
+                    <i class="fas fa-satellite-dish" style="color: var(--accept);"></i>
+                    الحالة الحية
+                </h3>
+            </div>
+            <div class="live-status-grid">
+                <div class="live-status-item">
+                    <div class="status-indicator"></div>
+                    <div id="live-tasks" class="status-value">{{ running_tasks }}</div>
+                    <div class="status-label">مهام قيد التنفيذ</div>
+                </div>
+                <div class="live-status-item">
+                    <div class="status-indicator"></div>
+                    <div id="live-accounts" class="status-value">{{ active_now }}</div>
+                    <div class="status-label">حسابات نشطة الآن</div>
+                </div>
+                <div class="live-status-item">
+                    <div class="status-indicator"></div>
+                    <div id="live-activity" class="status-value">{{ last_activity }}</div>
+                    <div class="status-label">آخر نشاط</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts & Comparison Row -->
+    <div class="dashboard-row two-cols">
+        <!-- Alerts Section -->
+        <div class="alerts-card">
+            <div class="section-header">
+                <h3 class="section-title">
+                    <i class="fas fa-bell"></i>
+                    التنبيهات
+                </h3>
+                <span style="color: var(--text-muted); font-size: 12px;">{{ alerts|length if alerts else 0 }} تنبيه</span>
+            </div>
+            <div id="alerts-container">
+                {% if alerts and alerts|length > 0 %}
+                    {% for alert in alerts %}
+                    <div class="alert-item {{ alert.type }}">
+                        <div class="alert-icon">
+                            <i class="fas {% if alert.type == 'danger' %}fa-exclamation-circle{% elif alert.type == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %}"></i>
+                        </div>
+                        <div class="alert-content">
+                            <div class="alert-title">{{ alert.title }}</div>
+                            <div class="alert-desc">{{ alert.message }}</div>
+                        </div>
+                        <div class="alert-time">{{ alert.time }}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="no-alerts">
+                        <i class="fas fa-check-circle"></i>
+                        <p>لا توجد تنبيهات حالياً</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Comparison Stats -->
+        <div class="comparison-card">
+            <div class="section-header">
+                <h3 class="section-title">
+                    <i class="fas fa-balance-scale" style="color: var(--secondary);"></i>
+                    إحصائيات المقارنة
+                </h3>
+            </div>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <div class="comparison-header">
+                        <span class="comparison-title">مقارنة مع الأسبوع الماضي</span>
+                        <span id="comp-week-badge" class="comparison-badge up">
+                            <i class="fas fa-arrow-up"></i> +{{ week_change }}%
+                        </span>
+                    </div>
+                    <div class="comparison-values">
+                        <span id="comp-week-current" class="comparison-current">{{ week_current }}</span>
+                        <span id="comp-week-previous" class="comparison-previous">الأسبوع الماضي: {{ week_previous }}</span>
+                    </div>
+                </div>
+                <div class="comparison-item">
+                    <div class="comparison-header">
+                        <span class="comparison-title">مقارنة مع الشهر الماضي</span>
+                        <span id="comp-month-badge" class="comparison-badge up">
+                            <i class="fas fa-arrow-up"></i> +{{ month_change }}%
+                        </span>
+                    </div>
+                    <div class="comparison-values">
+                        <span id="comp-month-current" class="comparison-current">{{ month_current }}</span>
+                        <span id="comp-month-previous" class="comparison-previous">الشهر الماضي: {{ month_previous }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tips Section -->
+    <div class="dashboard-row">
+        <div class="tips-card">
+            <div id="daily-tip" class="tip-content">
+                <div class="tip-icon">
+                    <i class="fas fa-lightbulb"></i>
+                </div>
+                <div class="tip-text">
+                    <div class="tip-title">نصيحة اليوم: التوزيع الذكي</div>
+                    <div class="tip-desc">قم بتوزيع المهام على فترات زمنية متباعدة لتجنب الكشف. يُفضل الانتظار 30-60 ثانية بين كل عملية.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity Table -->
+    <div class="dashboard-row">
+        <div class="activity-card">
+            <div class="section-header">
+                <h3 class="section-title">
+                    <i class="fas fa-history"></i>
+                    آخر النشاطات
+                </h3>
+                <a href="/support" style="color: var(--primary); text-decoration: none; font-size: 14px;">
+                    عرض الكل <i class="fas fa-arrow-left"></i>
+                </a>
+            </div>
+            <table class="activity-table">
+                <thead>
+                    <tr>
+                        <th>الوقت</th>
+                        <th>الحساب</th>
+                        <th>الإجراء</th>
+                        <th>الهدف</th>
+                        <th>الحالة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in recent_logs %}
+                    <tr>
+                        <td>{{ log.timestamp.strftime('%H:%M:%S') }}</td>
+                        <td><span style="color: var(--primary);">{{ log.account.username }}</span></td>
+                        <td>
+                            {% if log.action_type == 'like' %}
+                                <i class="fas fa-heart" style="color: #ff4757;"></i> إعجاب
+                            {% elif log.action_type == 'retweet' %}
+                                <i class="fas fa-retweet" style="color: #00ff9d;"></i> إعادة تغريد
+                            {% elif log.action_type == 'comment' %}
+                                <i class="fas fa-comment" style="color: #00f2ea;"></i> تعليق
+                            {% elif log.action_type == 'follow' %}
+                                <i class="fas fa-user-plus" style="color: #a855f7;"></i> متابعة
+                            {% else %}
+                                {{ log.action_type }}
+                            {% endif %}
+                        </td>
+                        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            {{ log.target }}
+                        </td>
+                        <td>
+                            {% if log.status == 'Success' %}
+                                <span class="status-badge success">نجاح</span>
+                            {% elif log.status == 'Failed' %}
+                                <span class="status-badge failed">فشل</span>
+                            {% else %}
+                                <span class="status-badge pending">{{ log.status }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% if not recent_logs %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                            لا توجد نشاطات حتى الآن
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

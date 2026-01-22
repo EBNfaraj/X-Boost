@@ -1,0 +1,652 @@
+/* ====================================
+   🏥 Health Clinic Page Styles
+   ==================================== */
+
+:root {
+  --health-primary: #00d4aa;
+  --health-danger: #ff6b6b;
+  --health-warning: #ffd93d;
+  --health-success: #6bcf7f;
+  --health-info: #4dabf7;
+  --health-bg: #0f0f23;
+  --health-card: #1a1a2e;
+  --health-border: #2d2d44;
+  --health-text: #e0e0e0;
+  --health-muted: #8a8a9f;
+}
+
+/* ====================================
+   Header Section
+   ==================================== */
+
+.health-header {
+  background: linear-gradient(135deg, var(--health-card) 0%, #16213e 100%);
+  padding: 2rem;
+  border-radius: 15px;
+  margin-bottom: 2rem;
+  border: 1px solid var(--health-border);
+  box-shadow: 0 8px 20px rgba(0, 212, 170, 0.1);
+}
+
+.health-header h2 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, var(--health-primary), #00ffcc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.health-header p {
+  color: var(--health-muted);
+  font-size: 1.1rem;
+}
+
+/* ====================================
+   Action Bar
+   ==================================== */
+
+.action-bar {
+  background: var(--health-card);
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  border: 1px solid var(--health-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.action-bar .search-box {
+  flex: 1;
+  min-width: 250px;
+  position: relative;
+}
+
+.action-bar .search-box input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  background: var(--health-bg);
+  border: 1px solid var(--health-border);
+  border-radius: 8px;
+  color: var(--health-text);
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.action-bar .search-box input:focus {
+  outline: none;
+  border-color: var(--health-primary);
+  box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.1);
+}
+
+.action-bar .search-box i {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--health-muted);
+}
+
+.action-bar .filter-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-bar .filter-btn {
+  padding: 0.75rem 1.25rem;
+  background: var(--health-bg);
+  border: 1px solid var(--health-border);
+  border-radius: 8px;
+  color: var(--health-text);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.action-bar .filter-btn:hover {
+  background: var(--health-border);
+  transform: translateY(-2px);
+}
+
+.action-bar .filter-btn.active {
+  background: var(--health-primary);
+  border-color: var(--health-primary);
+  color: #000;
+  font-weight: 600;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.btn-health {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.btn-health-primary {
+  background: linear-gradient(135deg, var(--health-primary), #00ffcc);
+  color: #000;
+}
+
+.btn-health-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 212, 170, 0.3);
+}
+
+.btn-health-secondary {
+  background: var(--health-card);
+  border: 1px solid var(--health-border);
+  color: var(--health-text);
+}
+
+.btn-health-secondary:hover {
+  background: var(--health-border);
+}
+
+.btn-health-danger {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+  color: #fff;
+}
+
+.btn-health-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+}
+
+/* ====================================
+   Stats Cards
+   ==================================== */
+
+.health-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: var(--health-card);
+  padding: 1.75rem;
+  border-radius: 12px;
+  border: 1px solid var(--health-border);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, var(--stat-color), transparent);
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.stat-card .stat-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  opacity: 0.8;
+}
+
+.stat-card .stat-number {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  line-height: 1;
+}
+
+.stat-card .stat-label {
+  color: var(--health-muted);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.stat-card .stat-trend {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.stat-card.healthy {
+  --stat-color: var(--health-success);
+}
+
+.stat-card.healthy .stat-number {
+  color: var(--health-success);
+}
+
+.stat-card.issues {
+  --stat-color: var(--health-danger);
+}
+
+.stat-card.issues .stat-number {
+  color: var(--health-danger);
+}
+
+.stat-card.total {
+  --stat-color: var(--health-info);
+}
+
+.stat-card.total .stat-number {
+  color: var(--health-info);
+}
+
+.stat-card.percentage {
+  --stat-color: var(--health-primary);
+}
+
+.stat-card.percentage .stat-number {
+  color: var(--health-primary);
+}
+
+/* ====================================
+   Charts Section
+   ==================================== */
+
+.charts-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.chart-card {
+  background: var(--health-card);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--health-border);
+}
+
+.chart-card h3 {
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+  color: var(--health-text);
+  font-weight: 600;
+}
+
+.chart-container {
+  position: relative;
+  height: 250px;
+}
+
+/* ====================================
+   Account Cards
+   ==================================== */
+
+.accounts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.account-health-card {
+  background: var(--health-card);
+  border: 1px solid var(--health-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.account-health-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--card-status-color);
+}
+
+.account-health-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  border-color: var(--health-primary);
+}
+
+.account-health-card.status-healthy {
+  --card-status-color: var(--health-success);
+}
+
+.account-health-card.status-suspended,
+.account-health-card.status-locked,
+.account-health-card.status-invalid {
+  --card-status-color: var(--health-danger);
+}
+
+.account-health-card.status-unknown {
+  --card-status-color: var(--health-muted);
+}
+
+.account-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.account-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--health-primary);
+}
+
+.account-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--health-primary), #00ffcc);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #000;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 212, 170, 0.3);
+  overflow: hidden;
+}
+
+.account-avatar i {
+  font-size: 1.5rem;
+  color: #fff;
+}
+
+.account-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.account-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-username {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--health-text);
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-date {
+  font-size: 0.8rem;
+  color: var(--health-muted);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  width: 100%;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.status-badge.healthy {
+  background: rgba(107, 207, 127, 0.15);
+  color: var(--health-success);
+  border: 1px solid rgba(107, 207, 127, 0.3);
+}
+
+.status-badge.suspended,
+.status-badge.locked,
+.status-badge.invalid {
+  background: rgba(255, 107, 107, 0.15);
+  color: var(--health-danger);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+}
+
+.status-badge.unknown {
+  background: rgba(138, 138, 159, 0.15);
+  color: var(--health-muted);
+  border: 1px solid rgba(138, 138, 159, 0.3);
+}
+
+.last-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--health-muted);
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background: var(--health-bg);
+  border-radius: 6px;
+}
+
+.check-button {
+  width: 100%;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, var(--health-primary), #00ffcc);
+  border: none;
+  border-radius: 8px;
+  color: #000;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.check-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 212, 170, 0.4);
+}
+
+.check-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ====================================
+   Progress Bar
+   ==================================== */
+
+.progress-container {
+  background: var(--health-card);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--health-border);
+  margin-bottom: 2rem;
+  display: none;
+}
+
+.progress-container.active {
+  display: block;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.progress-text {
+  font-weight: 600;
+  color: var(--health-text);
+}
+
+.progress-percentage {
+  font-weight: 700;
+  color: var(--health-primary);
+  font-size: 1.1rem;
+}
+
+.progress-bar-wrapper {
+  width: 100%;
+  height: 8px;
+  background: var(--health-bg);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--health-primary), #00ffcc);
+  border-radius: 10px;
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+/* ====================================
+   Empty State
+   ==================================== */
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: var(--health-card);
+  border-radius: 12px;
+  border: 1px solid var(--health-border);
+}
+
+.empty-state i {
+  font-size: 4rem;
+  color: var(--health-muted);
+  margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--health-text);
+}
+
+.empty-state p {
+  color: var(--health-muted);
+}
+
+/* ====================================
+   Loading Animation
+   ==================================== */
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.fa-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ====================================
+   Responsive Design
+   ==================================== */
+
+@media (max-width: 768px) {
+  .action-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .action-bar .search-box {
+    width: 100%;
+  }
+
+  .action-bar .filter-group {
+    flex-wrap: wrap;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .btn-health {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .health-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .charts-section {
+    grid-template-columns: 1fr;
+  }
+
+  .accounts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ====================================
+   Animations
+   ==================================== */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease;
+}
+
+.pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}

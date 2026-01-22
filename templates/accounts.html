@@ -1,0 +1,660 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/accounts.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-users-cog" style="color: var(--primary);"></i> إدارة الحسابات</h1>
+    <div style="display: flex; gap: 10px;">
+        <button class="btn-export" onclick="location.reload()">
+            <i class="fas fa-sync-alt"></i> تحديث
+        </button>
+        
+        <!-- Export Dropdown -->
+        <div class="dropdown">
+            <button class="btn-export dropdown-toggle" onclick="toggleDropdown('exportDropdown')">
+                <i class="fas fa-download"></i> تصدير
+                <i class="fas fa-chevron-down" style="font-size: 10px; margin-right: 5px;"></i>
+            </button>
+            <div id="exportDropdown" class="dropdown-menu">
+                <a href="#" onclick="exportAccounts('json'); return false;"><i class="fas fa-file-code"></i> تصدير JSON</a>
+                <a href="#" onclick="exportAccounts('csv'); return false;"><i class="fas fa-file-csv"></i> تصدير CSV</a>
+                <a href="#" onclick="exportAccounts('excel'); return false;"><i class="fas fa-file-excel"></i> تصدير Excel</a>
+                <a href="#" onclick="exportAccounts('pdf'); return false;"><i class="fas fa-file-pdf"></i> تصدير PDF</a>
+            </div>
+        </div>
+        
+        <!-- Import Button -->
+        <button class="btn-export" onclick="openModal('importModal')">
+            <i class="fas fa-upload"></i> استيراد
+        </button>
+        
+        <button class="btn btn-primary" onclick="openModal('addModal')">
+            <i class="fas fa-plus"></i> إضافة حساب
+        </button>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="charts-section fade-in-up" style="animation-delay: 0.1s">
+    <div class="charts-grid">
+        <!-- Status Distribution Chart -->
+        <div class="chart-card-sm">
+            <div class="chart-header-sm">
+                <h4><i class="fas fa-pie-chart" style="color: var(--primary);"></i> توزيع الحالات</h4>
+            </div>
+            <div class="chart-container-sm">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Interactions Chart -->
+        <div class="chart-card-sm">
+            <div class="chart-header-sm">
+                <h4><i class="fas fa-chart-bar" style="color: var(--secondary);"></i> التفاعلات</h4>
+            </div>
+            <div class="chart-container-sm">
+                <canvas id="interactionsChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Activity Timeline Chart -->
+        <div class="chart-card-sm timeline-chart">
+            <div class="chart-header-sm">
+                <h4><i class="fas fa-chart-line" style="color: var(--accept);"></i> النشاط الأسبوعي</h4>
+            </div>
+            <div class="chart-container-sm">
+                <canvas id="activityTimelineChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Bar -->
+<div class="stats-grid">
+    <div class="card stat-card fade-in-up" style="animation-delay: 0.2s">
+        <div>
+            <div class="stat-value">{{ total_accounts }}</div>
+            <div class="stat-label">إجمالي الحسابات</div>
+        </div>
+        <i class="fas fa-users" style="font-size: 40px; color: var(--primary); opacity: 0.5;"></i>
+    </div>
+    <div class="card stat-card fade-in-up" style="animation-delay: 0.3s">
+        <div>
+            <div class="stat-value" style="color: var(--accept);">{{ active_accounts }}</div>
+            <div class="stat-label">نشط</div>
+        </div>
+        <i class="fas fa-check-circle" style="font-size: 40px; color: var(--accept); opacity: 0.5;"></i>
+    </div>
+    <div class="card stat-card fade-in-up" style="animation-delay: 0.4s">
+        <div>
+            <div class="stat-value" style="color: var(--danger);">{{ suspended_accounts }}</div>
+            <div class="stat-label">معلق/مغلق</div>
+        </div>
+        <i class="fas fa-ban" style="font-size: 40px; color: var(--danger); opacity: 0.5;"></i>
+    </div>
+    <div class="card stat-card fade-in-up" style="animation-delay: 0.5s">
+        <div>
+            <div class="stat-value" style="color: #ff00de;">{{ total_interactions }}</div>
+            <div class="stat-label">إجمالي التفاعلات</div>
+        </div>
+        <i class="fas fa-bolt" style="font-size: 40px; color: #ff00de; opacity: 0.5;"></i>
+    </div>
+</div>
+
+<!-- Controls Bar -->
+<div class="controls-bar fade-in-up" style="animation-delay: 0.5s">
+    <div class="search-wrapper">
+        <input type="text" id="accountSearch" placeholder="بحث عن اسم مستخدم أو بروكسي..." class="search-input">
+        <i class="fas fa-search search-icon"></i>
+        
+        <select id="statusFilter" class="filter-select">
+            <option value="">جميع الحالات</option>
+            <option value="Active">نشط (Active)</option>
+            <option value="Suspended">معلق (Suspended)</option>
+            <option value="Locked">مقفل (Locked)</option>
+        </select>
+    </div>
+    
+    <div class="bulk-actions" id="bulkActions">
+        <span style="color: var(--text-muted); font-size: 14px;">تم تحديد <span id="selectedCount" style="color: var(--primary); font-weight: bold;">0</span></span>
+        <button class="btn btn-action" onclick="bulkCheckStatus()" style="padding: 8px 15px; font-size: 12px; background: #2196F3;">
+            <i class="fas fa-sync-alt"></i> فحص الحالة
+        </button>
+        <button class="btn btn-action" onclick="bulkDelete()" style="padding: 8px 15px; font-size: 12px; background: var(--danger);">
+            <i class="fas fa-trash"></i> حذف المحدد
+        </button>
+    </div>
+</div>
+
+<!-- Accounts Table -->
+<div class="accounts-table-container fade-in-up" style="animation-delay: 0.6s">
+    <table class="accounts-table" id="accountsTable">
+        <thead>
+            <tr>
+                <th style="width: 40px; text-align: center;">
+                    <label class="custom-checkbox">
+                        <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                        <span class="checkmark"></span>
+                    </label>
+                </th>
+                <th class="sortable" onclick="sortTable(1)">اسم المستخدم <i class="fas fa-sort"></i></th>
+                <th class="sortable" onclick="sortTable(2)">الحالة <i class="fas fa-sort"></i></th>
+                <th class="sortable" onclick="sortTable(3)">الإتصال (Proxy) <i class="fas fa-sort"></i></th>
+                <th class="sortable" onclick="sortTable(4)">تفاعلات <i class="fas fa-sort"></i></th>
+                <th class="sortable" onclick="sortTable(5)">آخر نشاط <i class="fas fa-sort"></i></th>
+                <th>إجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for account in accounts %}
+            <tr class="account-row" data-username="{{ account.username }}" data-status="{{ account.status }}" data-proxy="{{ account.proxy or '' }}">
+                <td style="text-align: center;">
+                    <label class="custom-checkbox">
+                        <input type="checkbox" class="account-checkbox" value="{{ account.id }}" onchange="updateBulkActions()">
+                        <span class="checkmark"></span>
+                    </label>
+                </td>
+                <td onclick="viewAccountDetails({{ account.id }})">
+                    <div class="user-cell">
+                        <div class="user-avatar">
+                            {% if account.profile_image_url %}
+                            <img src="{{ account.profile_image_url }}" alt="" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">
+                            {% else %}
+                            <i class="fab fa-twitter"></i>
+                            {% endif %}
+                        </div>
+                        <div>
+                            {% if account.display_name %}
+                            <div style="font-weight: bold; color: var(--text-primary);">{{ account.display_name }}</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">@{{ account.username.replace('@','') }}</div>
+                            {% else %}
+                            <div style="font-size: 14px;">{{ account.username }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    {% if account.status == 'Active' %}
+                    <span class="badge badge-active"><span class="badge-dot"></span> Active</span>
+                    {% elif account.status == 'Suspended' %}
+                    <span class="badge badge-suspended"><span class="badge-dot"></span> Suspended</span>
+                    {% else %}
+                    <span class="badge badge-locked"><span class="badge-dot"></span> {{ account.status }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if account.proxy %}
+                    <div style="font-size: 12px; font-family: monospace; color: var(--text-muted);" title="{{ account.proxy }}">
+                        <i class="fas fa-network-wired" style="color: var(--primary);"></i> Proxy
+                    </div>
+                    {% else %}
+                    <div style="font-size: 12px; color: var(--text-muted);">
+                        <i class="fas fa-globe"></i> Direct
+                    </div>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="stat-mini">
+                        <div class="stat-mini-item" title="إعجابات">
+                            <i class="fas fa-heart" style="color: #ff00de; font-size: 10px;"></i>
+                            <span class="stat-mini-val" id="likes-{{ account.id }}">{{ account.likes_count }}</span>
+                        </div>
+                        <div class="stat-mini-item" title="إعادة تغريد">
+                            <i class="fas fa-retweet" style="color: var(--accept); font-size: 10px;"></i>
+                            <span class="stat-mini-val" id="retweets-{{ account.id }}">{{ account.retweets_count }}</span>
+                        </div>
+                    </div>
+                </td>
+                <td style="color: var(--text-muted); font-size: 0.85em;" id="last-active-{{ account.id }}">
+                    {{ account.last_active.strftime('%Y-%m-%d %H:%M') if account.last_active else '-' }}
+                </td>
+                <td>
+                    <div class="action-grp">
+                        <button class="btn-icon btn-icon-info" title="عرض التفاصيل" onclick="viewAccountDetails({{ account.id }})">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                        <button class="btn-icon" title="تعديل" onclick="openEditModal({{ account.id }})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-icon" title="تحديث الإحصائيات" onclick="updateAccountStats({{ account.id }}, this)">
+                            <i class="fas fa-chart-line"></i>
+                        </button>
+                        <button class="btn-icon" title="فحص الحالة" onclick="checkHealth({{ account.id }}, this)">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <a href="/delete_account/{{ account.id }}" class="btn-icon btn-icon-danger" onclick="return confirm('هل أنت متأكد من حذف هذا الحساب؟')" title="حذف">
+                            <i class="fas fa-trash-alt"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Account Modal Enhanced -->
+<div id="addModal" class="modal">
+    <div class="modal-content" style="width: 600px;">
+        <div class="modal-header">
+            <h2><i class="fas fa-plus-circle" style="color: var(--primary);"></i> إضافة حساب جديد</h2>
+            <span class="close-modal" onclick="closeModal('addModal')">&times;</span>
+        </div>
+        <form onsubmit="addAccount(event)" class="modal-body">
+            
+            <!-- Section: Basic Info -->
+            <div class="form-section">
+                <h4 style="color: var(--text-muted); margin-bottom: 15px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">بيانات الحساب</h4>
+                
+                <div class="form-row" style="display: flex; gap: 15px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>اسم المستخدم <span style="color:var(--danger)">*</span></label>
+                        <div class="input-with-icon">
+                            <i class="fab fa-twitter"></i>
+                            <input type="text" name="username" required placeholder="@username" autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: Connection -->
+            <div class="form-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h4 style="color: var(--text-muted); margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">الاتصال (Proxy)</h4>
+                    <span id="proxyValidation" class="badge-status"></span>
+                </div>
+
+                <div class="form-group">
+                    <div class="input-with-icon proxy-input-group">
+                        <i class="fas fa-network-wired"></i>
+                        <input type="text" id="add_proxy" name="proxy" placeholder="http://user:pass@ip:port" onkeyup="validateProxy(this)">
+                        
+                        <div class="input-actions" style="position: absolute; left: 5px; top: 50%; transform: translateY(-50%); display: flex; gap: 5px;">
+                             <button type="button" class="btn-xs btn-outline" onclick="pasteContent('add_proxy')" title="لصق">
+                                <i class="fas fa-paste"></i>
+                            </button>
+                            <button type="button" id="btn_test_proxy" class="btn-xs btn-outline" onclick="testProxy()" title="فحص">
+                                <i class="fas fa-plug"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: Cookies -->
+            <div class="form-section">
+                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h4 style="color: var(--text-muted); margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">جلسة الدخول (Cookies)</h4>
+                    <div style="display: flex; gap: 10px;">
+                        <span id="cookiesValidation" class="badge-status"></span>
+                         <button type="button" class="btn-xs btn-outline" onclick="document.getElementById('cookieFile').click()">
+                            <i class="fas fa-upload"></i> استيراد ملف
+                        </button>
+                         <input type="file" id="cookieFile" accept=".json,.txt" style="display: none;" onchange="loadCookieFile(this)">
+                    </div>
+                </div>
+
+                <div class="form-group" style="position: relative;">
+                    <textarea id="add_cookies" name="cookies" rows="5" placeholder='[{"name": "auth_token", "value": "..."}]' 
+                        style="font-family: monospace; font-size: 12px; width: 100%; resize: vertical;" onkeyup="validateCookies(this)"></textarea>
+                    
+                    <button type="button" class="btn-icon-inside-textarea" onclick="pasteContent('add_cookies')" title="لصق من الحافظة" style="bottom: 10px; right: unset; left: 10px;">
+                        <i class="fas fa-paste"></i> لصق
+                    </button>
+                    
+                    <button type="button" class="btn-icon-inside-textarea" onclick="formatJSON('add_cookies')" title="تنسيق JSON" style="bottom: 10px; right: unset; left: 80px;">
+                        <i class="fas fa-code"></i> تنسيق
+                    </button>
+                </div>
+            </div>
+            
+            <div class="modal-footer" style="padding: 20px 25px; background: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.05);">
+                <button type="button" class="btn btn-action" onclick="closeModal('addModal')">إلغاء</button>
+                <button type="submit" class="btn btn-primary" style="min-width: 120px;">
+                    <i class="fas fa-check"></i> إضافة الحساب
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Account Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-edit" style="color: var(--primary);"></i> تعديل الحساب</h2>
+            <span class="close-modal" onclick="closeModal('editModal')">&times;</span>
+        </div>
+        <form onsubmit="saveAccount(event)">
+            <input type="hidden" id="edit_account_id" name="id">
+            
+            <div class="form-group">
+                <label>اسم المستخدم (Username)</label>
+                <div class="input-with-icon">
+                    <i class="fab fa-twitter"></i>
+                    <input type="text" id="edit_username" name="username" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>الحالة</label>
+                <select id="edit_status" name="status" class="filter-select" style="width:100%">
+                    <option value="Active">نشط</option>
+                    <option value="Suspended">معلق</option>
+                    <option value="Locked">مقفل</option>
+                    <option value="Invalid Cookies">كوكيز غير صالحة</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>البروكسي</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-server"></i>
+                    <input type="text" id="edit_proxy" name="proxy">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>ملفات تعريف الارتباط (Cookies JSON)</label>
+                <textarea id="edit_cookies" name="cookies" rows="4" style="font-family: monospace; font-size: 12px; width: 100%;"></textarea>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-action" onclick="closeModal('editModal')">إلغاء</button>
+                <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Account Details Modal -->
+<div id="detailsModal" class="account-details-modal">
+    <div class="details-content">
+        <div class="details-header">
+            <h2><i class="fas fa-user-circle" style="color: var(--primary);"></i> تفاصيل الحساب</h2>
+            <span class="close-modal" onclick="closeDetailsModal()">&times;</span>
+        </div>
+        <div class="details-body">
+            <div id="accountDetailsContent">
+                <!-- Content will be populated dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Import Modal -->
+<div id="importModal" class="modal">
+    <div class="modal-content" style="width: 550px;">
+        <div class="modal-header">
+            <h2><i class="fas fa-upload" style="color: var(--primary);"></i> استيراد الحسابات</h2>
+            <span class="close-modal" onclick="closeModal('importModal')">&times;</span>
+        </div>
+        <form id="importForm" onsubmit="importAccounts(event)" class="modal-body">
+            <div class="form-section">
+                <h4 style="color: var(--text-muted); margin-bottom: 15px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">اختر ملف للاستيراد</h4>
+                
+                <div class="import-dropzone" id="importDropzone">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 48px; color: var(--primary); margin-bottom: 15px;"></i>
+                    <p style="margin: 0; color: var(--text-main);">اسحب الملف هنا أو ا ضغط لإختيار ملف</p>
+                    <p style="margin: 5px 0 0; font-size: 12px; color: var(--text-muted);">JSON أو CSV</p>
+                    <input type="file" id="importFile" name="file" accept=".json,.csv" style="display: none;" onchange="handleFileSelect(this)">
+                </div>
+                
+                <div id="selectedFileInfo" style="display: none; margin-top: 15px; padding: 15px; background: rgba(0,242,234,0.1); border-radius: 8px; border: 1px solid rgba(0,242,234,0.2);">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-file-alt" style="color: var(--primary);"></i>
+                            <span id="selectedFileName" style="color: var(--text-main);"></span>
+                        </div>
+                        <button type="button" class="btn-icon" onclick="clearFileSelection()" style="background: rgba(255,42,42,0.2); color: var(--danger);">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-section" style="background: rgba(255,255,255,0.02);">
+                <h4 style="color: var(--text-muted); margin-bottom: 10px; font-size: 12px;">ملاحظات</h4>
+                <ul style="margin: 0; padding-right: 20px; color: var(--text-muted); font-size: 13px; line-height: 1.8;">
+                    <li>الحسابات الموجودة سيتم تحديثها</li>
+                    <li>الحسابات الجديدة سيتم إضافتها</li>
+                    <li>كل سطر يجب أن يحتوي على username على الأقل</li>
+                </ul>
+            </div>
+            
+            <div class="modal-footer" style="padding: 20px 25px; background: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.05);">
+                <button type="button" class="btn btn-action" onclick="closeModal('importModal')">إلغاء</button>
+                <button type="submit" class="btn btn-primary" id="importBtn" disabled>
+                    <i class="fas fa-upload"></i> استيراد
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Quick Preview Tooltip -->
+<div id="quickPreview" class="quick-preview" style="display: none;">
+    <div class="quick-preview-content">
+        <div class="quick-preview-header">
+            <div class="quick-preview-avatar"></div>
+            <div class="quick-preview-info">
+                <div class="quick-preview-name"></div>
+                <div class="quick-preview-username"></div>
+            </div>
+        </div>
+        <div class="quick-preview-stats">
+            <div class="qp-stat">
+                <i class="fas fa-heart"></i>
+                <span class="qp-likes">0</span>
+            </div>
+            <div class="qp-stat">
+                <i class="fas fa-retweet"></i>
+                <span class="qp-retweets">0</span>
+            </div>
+        </div>
+        <div class="quick-preview-activity">
+            <small>آخر نشاط: <span class="qp-last-active">-</span></small>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<!-- SheetJS for Excel export -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<!-- jsPDF for PDF export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+
+<script src="{{ url_for('static', filename='js/accounts.js') }}"></script>
+
+<script>
+// Initialize Charts with data from backend
+document.addEventListener('DOMContentLoaded', function() {
+    initAccountsCharts();
+    initDropzoneEvents();
+});
+
+function initAccountsCharts() {
+    // Fetch chart data from API
+    fetch('/api/accounts/charts')
+        .then(response => response.json())
+        .then(data => {
+            // Status Distribution Chart (Doughnut)
+            const statusCtx = document.getElementById('statusChart');
+            if (statusCtx) {
+                new Chart(statusCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['نشط', 'معلق', 'مقفل', 'أخرى'],
+                        datasets: [{
+                            data: [
+                                data.status_distribution.active,
+                                data.status_distribution.suspended,
+                                data.status_distribution.locked,
+                                data.status_distribution.other
+                            ],
+                            backgroundColor: [
+                                'rgba(0, 255, 157, 0.8)',
+                                'rgba(255, 42, 42, 0.8)',
+                                'rgba(255, 235, 59, 0.8)',
+                                'rgba(139, 139, 155, 0.8)'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '65%',
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Interactions Chart (Bar)
+            const interactionsCtx = document.getElementById('interactionsChart');
+            if (interactionsCtx) {
+                new Chart(interactionsCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['إعجابات', 'إعادة تغريد'],
+                        datasets: [{
+                            data: [data.interactions.likes, data.interactions.retweets],
+                            backgroundColor: [
+                                'rgba(255, 0, 222, 0.8)',
+                                'rgba(0, 255, 157, 0.8)'
+                            ],
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(255,255,255,0.05)' }
+                            },
+                            x: {
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Activity Timeline Chart (Line)
+            const timelineCtx = document.getElementById('activityTimelineChart');
+            if (timelineCtx) {
+                const gradient = timelineCtx.getContext('2d').createLinearGradient(0, 0, 0, 150);
+                gradient.addColorStop(0, 'rgba(0, 255, 157, 0.3)');
+                gradient.addColorStop(1, 'rgba(0, 255, 157, 0)');
+                
+                new Chart(timelineCtx, {
+                    type: 'line',
+                    data: {
+                        labels: data.timeline.map(t => t.date),
+                        datasets: [{
+                            data: data.timeline.map(t => t.count),
+                            fill: true,
+                            backgroundColor: gradient,
+                            borderColor: 'rgba(0, 255, 157, 1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            pointRadius: 3,
+                            pointBackgroundColor: 'rgba(0, 255, 157, 1)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(255,255,255,0.05)' }
+                            },
+                            x: {
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
+        })
+        .catch(err => console.error('Error loading charts:', err));
+}
+
+// Dropzone events
+function initDropzoneEvents() {
+    const dropzone = document.getElementById('importDropzone');
+    const fileInput = document.getElementById('importFile');
+    
+    if (dropzone) {
+        dropzone.addEventListener('click', () => fileInput.click());
+        
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+        
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('dragover');
+        });
+        
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect(fileInput);
+            }
+        });
+    }
+}
+
+function handleFileSelect(input) {
+    const file = input.files[0];
+    if (file) {
+        document.getElementById('selectedFileName').textContent = file.name;
+        document.getElementById('selectedFileInfo').style.display = 'block';
+        document.getElementById('importBtn').disabled = false;
+    }
+}
+
+function clearFileSelection() {
+    document.getElementById('importFile').value = '';
+    document.getElementById('selectedFileInfo').style.display = 'none';
+    document.getElementById('importBtn').disabled = true;
+}
+
+function toggleDropdown(id) {
+    const dropdown = document.getElementById(id);
+    dropdown.classList.toggle('show');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.dropdown')) {
+        document.querySelectorAll('.dropdown-menu.show').forEach(d => d.classList.remove('show'));
+    }
+});
+</script>
+{% endblock %}
+

@@ -1,0 +1,211 @@
+:root {
+  --bg-dark: #0a0a12;
+  --bg-panel: #13131f;
+  --primary: #00f2ea;
+  --secondary: #ff0055;
+  --text-main: #ffffff;
+  --text-muted: #8b8b9b;
+  --accept: #00ff9d;
+  --danger: #ff2a2a;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Cairo', sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  overflow-x: hidden;
+}
+
+/* Glassmorphism Sidebar */
+.sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  /* Changed from left to right for RTL */
+  width: 250px;
+  height: 100vh;
+  background: rgba(19, 19, 31, 0.8);
+  backdrop-filter: blur(10px);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  /* Changed border-right to border-left */
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.brand {
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 40px;
+  text-shadow: 0 0 10px rgba(0, 242, 234, 0.5);
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: 0.3s;
+  border-radius: 8px;
+  margin-bottom: 5px;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  background: rgba(0, 242, 234, 0.1);
+  color: var(--primary);
+  box-shadow: 0 0 15px rgba(0, 242, 234, 0.1);
+}
+
+.nav-link i {
+  margin-left: 10px;
+  /* Changed margin-right to margin-left */
+}
+
+/* Main Content */
+.main-content {
+  margin-right: 250px;
+  /* Changed margin-left to margin-right */
+  padding: 40px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+h1 {
+  font-size: 32px;
+  margin: 0;
+}
+
+/* Cards */
+.card {
+  background: var(--bg-panel);
+  border-radius: 16px;
+  padding: 25px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  border-color: var(--primary);
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stat-value {
+  font-size: 36px;
+  font-weight: bold;
+  color: var(--text-main);
+}
+
+.stat-label {
+  color: var(--text-muted);
+}
+
+/* Forms & Inputs */
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--text-main);
+  margin-bottom: 15px;
+  box-sizing: border-box;
+  transition: 0.3s;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 10px rgba(0, 242, 234, 0.2);
+}
+
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  text-transform: uppercase;
+  transition: 0.3s;
+}
+
+.btn-primary {
+  background: linear-gradient(45deg, var(--primary), #00aaff);
+  color: #000;
+  box-shadow: 0 5px 15px rgba(0, 242, 234, 0.3);
+}
+
+.btn-primary:hover {
+  filter: brightness(1.2);
+  box-shadow: 0 5px 25px rgba(0, 242, 234, 0.5);
+}
+
+.btn-action {
+  background: var(--secondary);
+  color: white;
+}
+
+/* Table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+th,
+td {
+  padding: 15px;
+  text-align: right;
+  /* Changed to right for RTL */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+th {
+  color: var(--text-muted);
+  font-weight: normal;
+}
+
+.status-active {
+  color: var(--accept);
+}
+
+.status-inactive {
+  color: var(--danger);
+}
+
+/* Animations */
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 5px var(--primary);
+  }
+
+  50% {
+    box-shadow: 0 0 20px var(--primary);
+  }
+
+  100% {
+    box-shadow: 0 0 5px var(--primary);
+  }
+}

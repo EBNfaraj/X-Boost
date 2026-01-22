@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h2 class="section-title"><i class="fas fa-cogs"></i> إعدادات النظام (Settings)</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow-sm border-0" style="background:#1a1a2e; border:1px solid #333;">
+            <div class="card-header bg-transparent border-bottom border-secondary">
+                <h5 class="mb-0 text-primary"><i class="fas fa-robot"></i> Smart AI Agent Config</h5>
+            </div>
+            <div class="card-body">
+                {% if message %}
+                <div class="alert alert-success">{{ message }}</div>
+                {% endif %}
+                
+                <form method="POST">
+                    <div class="form-group">
+                        <label>مزود الخدمة (AI Provider)</label>
+                        <select name="ai_provider" class="form-control" style="background:#0f0f1a; color:#fff; border-color:#333;">
+                            <option value="groq" {% if settings.ai_provider == 'groq' %}selected{% endif %}>Groq (موصى به - سريع ومجاني)</option>
+                            <option value="openai" {% if settings.ai_provider == 'openai' %}selected{% endif %}>OpenAI (قريباً)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>مفتاح الربط (API Key)</label>
+                        <input type="password" name="ai_api_key" value="{{ settings.ai_api_key if settings.ai_api_key else '' }}" class="form-control" style="background:#0f0f1a; color:#fff; border-color:#333;" placeholder="gsk_..." required>
+                        <small class="text-muted">احصل على المفتاح من <a href="https://console.groq.com/" target="_blank">Groq Console</a></small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>اسم الموديل (Model Name)</label>
+                        <input type="text" name="ai_model" value="{{ settings.ai_model }}" class="form-control" style="background:#0f0f1a; color:#fff; border-color:#333;">
+                    </div>
+
+                    <div class="form-group">
+                        <label>تعليمات البوت/الشخصية (System Prompt)</label>
+                        <textarea name="ai_system_prompt" rows="4" class="form-control" style="background:#0f0f1a; color:#fff; border-color:#333; direction: rtl;">{{ settings.ai_system_prompt }}</textarea>
+                        <small class="text-muted">حدد كيف سيتصرف البوت. مثال: "أنت خبير تقني وتتحدث باللهجة السعودية."</small>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-block"><i class="fas fa-save"></i> حفظ الإعدادات</button>
+                </form>
+                
+                <hr class="border-secondary my-4">
+                
+                <h6><i class="fas fa-vial"></i> اختبار التوليد (Test Generation)</h6>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" value="يا له من يوم جميل! #صباح_الخير" readonly style="background:#0f0f1a; color:#fff; border-color:#333; text-align:right;">
+                    <div class="input-group-append">
+                        <button class="btn btn-outline-info" onclick="testAI()">توليد رد تجريبي</button>
+                    </div>
+                </div>
+                <div id="test-result" class="p-3 rounded" style="background:#0f0f1a; min-height:50px; display:none;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function testAI() {
+    const resDiv = document.getElementById('test-result');
+    resDiv.style.display = 'block';
+    resDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+    
+    fetch('/test_ai', {method: 'POST'})
+    .then(r => r.json())
+    .then(data => {
+        if(data.status === 'success') {
+            resDiv.innerHTML = '<span class="text-success"><i class="fas fa-check"></i> ' + data.reply + '</span>';
+        } else {
+            resDiv.innerHTML = '<span class="text-danger">Error: ' + data.message + '</span>';
+        }
+    })
+    .catch(() => {
+        resDiv.innerHTML = '<span class="text-danger">Network Error</span>';
+    });
+}
+</script>
+{% endblock %}

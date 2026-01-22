@@ -1,0 +1,574 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Premium Typography -->
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;800;900&family=Inter:wght@300;400;600;700;800&family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
+
+<!-- Animated Backdrop & Overlays -->
+<div class="cyber-bg">
+    <div class="cyber-grid"></div>
+    <div class="cyber-particles"></div>
+    <div class="cyber-scanlines"></div>
+</div>
+
+<div class="cyber-container fade-in" dir="rtl">
+    <!-- Header Section -->
+    <div class="page-header decorative-line">
+        <div class="header-content">
+            <h1><i class="fas fa-rocket pulse-icon"></i> <span class="glitch-text" data-text="إدارة الحملات">إدارة الحملات</span></h1>
+            <p class="subtitle">نظام الترويج المتقدم // v5.0 stable</p>
+        </div>
+        <div class="header-actions">
+            <button onclick="openCreateModal()" class="cyber-btn primary">
+                <i class="fas fa-plus"></i> حملة جديدة
+                <div class="btn-glow"></div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-dashboard">
+        <!-- Stats Summary -->
+        <div class="stats-grid-simple">
+            <div class="stat-box-modern" data-target="{{ total_campaigns }}">
+                <div class="icon-wrapper ops"><i class="fas fa-layer-group"></i></div>
+                <div class="stat-content">
+                    <span class="stat-value">{{ total_campaigns }}</span>
+                    <span class="stat-label">إجمالي الحملات</span>
+                </div>
+            </div>
+            <div class="stat-box-modern" data-target="{{ active_campaigns }}">
+                <div class="icon-wrapper like"><i class="fas fa-bolt"></i></div>
+                <div class="stat-content">
+                    <span class="stat-value">{{ active_campaigns }}</span>
+                    <span class="stat-label">نشطة حالياً</span>
+                </div>
+            </div>
+            <div class="stat-box-modern" data-target="{{ completed_campaigns }}">
+                <div class="icon-wrapper check"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-content">
+                    <span class="stat-value">{{ completed_campaigns }}</span>
+                    <span class="stat-label">مكتملة</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Campaigns List -->
+        <div class="campaigns-section" style="margin-top: 30px;">
+            <div class="section-title">
+                <h3><i class="fas fa-list"></i> الحملات الجارية</h3>
+            </div>
+
+            {% if campaigns %}
+            <div class="campaigns-grid">
+                {% for campaign in campaigns %}
+                <div class="cyber-card campaign-card {{ campaign.status|lower }}">
+                    <div class="card-status-line {{ campaign.status|lower }}"></div>
+                    
+                    <div class="campaign-header">
+                        <div class="c-info">
+                            <h4>{{ campaign.name }}</h4>
+                            <span class="c-type"><i class="fas fa-bullseye"></i> {{ campaign.campaign_type }}</span>
+                        </div>
+                        <div class="c-status">
+                            <span class="status-badge {{ campaign.status|lower }}">
+                                {% if campaign.status == 'Active' %}نشط
+                                {% elif campaign.status == 'Paused' %}متوقف
+                                {% elif campaign.status == 'Completed' %}مكتمل
+                                {% elif campaign.status == 'Scheduled' %}مجدول 🕒
+                                {% else %}{{ campaign.status }}{% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="campaign-target">
+                        <a href="{{ campaign.target_input }}" target="_blank" title="{{ campaign.target_input }}">
+                            <i class="fab fa-twitter"></i> رابط التغريدة
+                        </a>
+                    </div>
+
+                    <div class="campaign-progress">
+                        <div class="progress-labels">
+                            <span>التقدم</span>
+                            <span>{{ campaign.completed_quantity }} / {{ campaign.target_quantity }}</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" style="width: {{ (campaign.completed_quantity / campaign.target_quantity * 100)|round }}%"></div>
+                        </div>
+                    </div>
+
+                    <div class="campaign-meta">
+                        <div class="meta-item">
+                            <i class="fas fa-tachometer-alt"></i> السرعة: 
+                            <span class="speed-val">
+                                {% if campaign.speed == 1 %}صاروخ 🚀
+                                {% elif campaign.speed == 3 %}طبيعي 🍃
+                                {% elif campaign.speed == 5 %}هادئ 🐢
+                                {% else %}{{ campaign.speed }}{% endif %}
+                            </span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-tasks"></i> الإجراءات: 
+                            {% for action in campaign.actions|replace("'", '"')|from_json %}
+                                <span class="action-tag">{{ action }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="campaign-actions">
+                        {% if campaign.status == 'Active' %}
+                        <button onclick="controlCampaign('pause', {{ campaign.id }})" class="action-btn pause" title="إيقاف مؤقت">
+                            <i class="fas fa-pause"></i>
+                        </button>
+                        {% elif campaign.status == 'Paused' %}
+                        <button onclick="controlCampaign('resume', {{ campaign.id }})" class="action-btn play" title="استئناف">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        {% endif %}
+                        
+                        <button onclick="controlCampaign('delete', {{ campaign.id }})" class="action-btn delete" title="حذف">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state-modern">
+                <div class="empty-icon pulse-ghost"><i class="fas fa-box-open"></i></div>
+                <h3>لا توجد حملات نشطة</h3>
+                <p>ابدأ بإنشاء حملة جديدة لزيادة التفاعل.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Create Campaign Modal -->
+<div id="createModal" class="cyber-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-rocket"></i> إنشاء حملة جديدة</h2>
+            <p>أدخل تفاصيل الحملة لجدولة العمليات</p>
+            <button class="close-modal" onclick="closeCreateModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <form action="/create_campaign" method="POST" class="modal-form">
+            <div class="form-group">
+                <label>اسم الحملة</label>
+                <input type="text" name="name" placeholder="مثال: دعم تغريدة الصباح" required class="cyber-input">
+            </div>
+
+            <div class="form-group">
+                <label>رابط الهدف أو اسم المستخدم</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-link"></i>
+                    <input type="text" name="target" class="cyber-input" placeholder="https://x.com/username/status/..." required>
+                </div>
+            </div>
+
+            <!-- AI Tweet Assistant Trigger -->
+            <div class="form-group" id="tweetContentGroup">
+                <label>محتوى التغريدة (للنشر المباشر)</label>
+                <div class="input-group" style="display: flex; gap: 10px;">
+                     <textarea name="tweet_content" id="finalTweetContent" class="cyber-input" rows="3" placeholder="اكتب تغريدتك هنا..." style="flex:1;"></textarea>
+                     <button type="button" class="cyber-btn special-ai" onclick="openAIModal()" style="height: fit-content; white-space: nowrap;">
+                        <i class="fas fa-magic"></i> AI Magic
+                     </button>
+                </div>
+                <small class="text-dim">استخدم هذا الحقل إذا كنت تريد نشر تغريدة جديدة.</small>
+            </div>
+
+            <div class="form-group">
+                <label>توقيت البدء (اختياري)</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                    <input type="datetime-local" name="scheduled_time" class="cyber-input" title="اتركه فارغاً للبدء فوراً">
+                </div>
+                <small style="color: var(--text-dim); font-size: 0.8rem;">اتركه فارغاً للبدء فوراً</small>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group half">
+                    <label>الكمية المطلوبة</label>
+                    <input type="number" name="target_quantity" value="10" min="1" max="1000" class="cyber-input">
+                </div>
+                <div class="form-group half">
+                    <label>سرعة التنفيذ</label>
+                    <div class="speed-control">
+                        <input type="range" name="speed" min="1" max="5" value="3" oninput="updateSpeedLabel(this)">
+                        <span id="speedLabel">طبيعي (3)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>الإجراءات المطلوبة</label>
+                <div class="checkbox-group">
+                    <label class="cyber-checkbox">
+                        <input type="checkbox" name="actions" value="like" checked>
+                        <span class="checkmark"></span>
+                        <span class="cb-label"><i class="fas fa-heart text-danger"></i> إعجاب</span>
+                    </label>
+                    <label class="cyber-checkbox">
+                        <input type="checkbox" name="actions" value="retweet">
+                        <span class="checkmark"></span>
+                        <span class="cb-label"><i class="fas fa-retweet text-success"></i> ريتويت</span>
+                    </label>
+                    <label class="cyber-checkbox">
+                        <input type="checkbox" name="actions" value="reply">
+                        <span class="checkmark"></span>
+                        <span class="cb-label"><i class="fas fa-comment text-primary"></i> رد ذكي</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" onclick="closeCreateModal()" class="cyber-btn secondary">إلغاء</button>
+                <button type="submit" class="cyber-btn primary">
+                    <i class="fas fa-check"></i> إطلاق الحملة
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Scripts & Styles -->
+<script>
+    function openCreateModal() {
+        document.getElementById('createModal').style.display = 'flex';
+        setTimeout(() => document.getElementById('createModal').classList.add('active'), 10);
+    }
+
+    function closeCreateModal() {
+        document.getElementById('createModal').classList.remove('active');
+        setTimeout(() => document.getElementById('createModal').style.display = 'none', 300);
+    }
+
+    function updateSpeedLabel(input) {
+        const labels = {
+            1: 'سريع جداً (صاروخ) 🚀',
+            2: 'سريع',
+            3: 'طبيعي (متوازن) 🍃',
+            4: 'بطيء',
+            5: 'هادئ (آمن جداً) 🛡️'
+        };
+        document.getElementById('speedLabel').innerText = labels[input.value] || input.value;
+    }
+
+    function controlCampaign(action, id) {
+        if (action === 'delete' && !confirm('هل أنت متأكد من حذف هذه الحملة؟')) return;
+
+        fetch(`/api/campaign_action/${action}/${id}`)
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            });
+    }
+
+    // Initialize HUD for counters
+    document.addEventListener('DOMContentLoaded', () => {
+        const stats = document.querySelectorAll('.stat-box-modern');
+        stats.forEach(box => {
+            const target = parseInt(box.getAttribute('data-target')) || 0;
+            const display = box.querySelector('.stat-value');
+            display.innerText = target; // Simplify for now
+        });
+    });
+
+    // AI Modal Functions
+    function openAIModal() {
+        document.getElementById('aiModal').style.display = 'flex';
+        // Fade in effect
+        setTimeout(() => {
+            document.querySelector('.modal-glass.ai-theme').style.transform = 'scale(1)';
+            document.querySelector('#aiModal').style.opacity = '1';
+        }, 10);
+    }
+    
+    function closeAIModal() {
+        document.getElementById('aiModal').style.display = 'none';
+    }
+    
+    function generateTweets() {
+        const topic = document.getElementById('aiTopic').value;
+        const tone = document.getElementById('aiTone').value;
+        const lang = document.getElementById('aiLang').value;
+        const resultsDiv = document.getElementById('aiResults');
+        const btn = document.querySelector('.special-ai.full-width');
+        
+        if(!topic) { alert('الرجاء كتابة موضوع!'); return; }
+        
+        // Loading State
+        const originalBtnText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التفكير...';
+        btn.disabled = true;
+        resultsDiv.innerHTML = '<div class="ai-placeholder"><i class="fas fa-spinner fa-spin"></i></div>';
+        
+        fetch('/generate_ai_tweets', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ topic, tone, lang })
+        })
+        .then(r => r.json())
+        .then(data => {
+            btn.innerHTML = originalBtnText;
+            btn.disabled = false;
+            
+            if(data.success) {
+                resultsDiv.innerHTML = '';
+                data.tweets.forEach(tweet => {
+                    const card = document.createElement('div');
+                    card.className = 'ai-suggestion-card';
+                    card.innerHTML = `
+                        <p>${tweet}</p>
+                        <button class="cyber-btn sm primary use-btn" onclick="useTweet(this)" type="button">
+                            <i class="fas fa-check"></i> استخدام
+                        </button>
+                    `;
+                    resultsDiv.appendChild(card);
+                });
+            } else {
+                resultsDiv.innerHTML = `<div class="ai-placeholder" style="color:#ff4444">${data.message || 'Error'}</div>`;
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            btn.innerHTML = originalBtnText;
+            btn.disabled = false;
+            resultsDiv.innerHTML = '<div class="ai-placeholder" style="color:#ff4444">فشل الاتصال</div>';
+        });
+    }
+    
+    function useTweet(btn) {
+        const text = btn.parentElement.querySelector('p').innerText;
+        document.getElementById('finalTweetContent').value = text;
+        closeAIModal();
+    }
+</script>
+
+
+<style>
+/* AI Modal Special Styling */
+.modal-glass.ai-theme {
+    background: #131520;
+    border: 1px solid var(--cyber-purple, #bc13fe);
+    box-shadow: 0 0 30px rgba(188, 19, 254, 0.2);
+    max-width: 600px;
+    width: 90%;
+    padding: 30px;
+    border-radius: 12px;
+    position: relative;
+}
+.cyber-btn.special-ai {
+    background: linear-gradient(45deg, #bc13fe, #7a0cd2);
+    border: none;
+    color: white;
+    box-shadow: 0 0 15px rgba(188, 19, 254, 0.4);
+    transition: all 0.3s ease;
+}
+.cyber-btn.special-ai:hover {
+    box-shadow: 0 0 25px rgba(188, 19, 254, 0.7);
+    transform: translateY(-2px);
+}
+.ai-results-grid {
+    margin-top: 20px;
+    display: grid;
+    gap: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+.ai-suggestion-card {
+    background: rgba(255,255,255,0.05);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    padding-bottom: 40px;
+}
+.ai-suggestion-card:hover {
+    background: rgba(188, 19, 254, 0.1);
+    border-color: var(--cyber-purple, #bc13fe);
+}
+.ai-suggestion-card p {
+    margin: 0 0 10px 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    color: #eee;
+}
+.use-btn {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    font-size: 0.8rem;
+    padding: 4px 10px;
+}
+.ai-placeholder {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-dim);
+}
+.ai-placeholder i { font-size: 3rem; margin-bottom: 10px; opacity: 0.5; }
+</style>
+
+<style>
+    /* Campaign Specific Styles */
+    .campaigns-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 25px;
+    }
+
+    .campaign-card {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .campaign-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 242, 234, 0.1);
+    }
+
+    .card-status-line {
+        position: absolute; top:0; left:0; width: 4px; height: 100%;
+        background: var(--text-dim);
+    }
+    .card-status-line.active { background: var(--primary); box-shadow: 0 0 10px var(--primary); }
+    .card-status-line.completed { background: #00ff88; box-shadow: 0 0 10px #00ff88; }
+    .card-status-line.paused { background: #ffaa00; }
+
+    .campaign-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+    .c-info h4 { margin: 0; font-size: 1.1rem; color: #fff; }
+    .c-type { font-size: 0.8rem; color: var(--text-dim); }
+
+    .status-badge {
+        padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;
+        background: rgba(255,255,255,0.1);
+    }
+    .status-badge.active { color: var(--primary); background: rgba(0, 242, 234, 0.1); border: 1px solid rgba(0,242,234,0.3); }
+    .status-badge.completed { color: #00ff88; background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0,255,136,0.3); }
+    .status-badge.paused { color: #ffaa00; background: rgba(255, 170, 0, 0.1); }
+
+    .campaign-target a {
+        display: block;
+        background: rgba(29, 161, 242, 0.1);
+        padding: 8px 12px;
+        border-radius: 8px;
+        color: #1da1f2;
+        text-decoration: none;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: 0.2s;
+    }
+    .campaign-target a:hover { background: rgba(29, 161, 242, 0.2); }
+
+    .progress-labels { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 5px; color: var(--text-dim); }
+    .progress-bar-bg { background: rgba(255,255,255,0.05); height: 8px; border-radius: 10px; overflow: hidden; }
+    .progress-bar-fill { 
+        height: 100%; 
+        background: linear-gradient(90deg, var(--secondary), var(--primary)); 
+        box-shadow: 0 0 10px var(--primary-glow);
+    }
+
+    .campaign-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        background: rgba(0,0,0,0.2);
+        padding: 10px;
+        border-radius: 8px;
+    }
+    .action-tag {
+        background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-right: 3px;
+    }
+
+    .campaign-actions {
+        display: flex; gap: 10px; justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px;
+    }
+    .action-btn {
+        background: none; border: 1px solid rgba(255,255,255,0.1); color: var(--text-dim);
+        width: 32px; height: 32px; border-radius: 6px; cursor: pointer; transition: 0.2s;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .action-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .action-btn.play:hover { color: #00ff88; border-color: #00ff88; }
+    .action-btn.pause:hover { color: #ffaa00; border-color: #ffaa00; }
+    .action-btn.delete:hover { color: #ff4444; border-color: #ff4444; }
+
+    /* Modal Styles */
+    .cyber-modal {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8); z-index: 1000;
+        display: none; align-items: center; justify-content: center;
+        opacity: 0; transition: opacity 0.3s;
+        backdrop-filter: blur(5px);
+    }
+    .cyber-modal.active { opacity: 1; }
+    
+    .modal-content {
+        background: #131520; border: 1px solid var(--primary);
+        box-shadow: 0 0 30px rgba(0, 242, 234, 0.2);
+        width: 100%; max-width: 500px;
+        padding: 30px; border-radius: 12px;
+        transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .cyber-modal.active .modal-content { transform: scale(1); }
+
+    .modal-header { text-align: center; margin-bottom: 25px; position: relative; }
+    .modal-header h2 { margin: 0; color: #fff; }
+    .close-modal { position: absolute; left: 0; top: 0; background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1.2rem; }
+    
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; color: var(--text-dim); margin-bottom: 8px; font-size: 0.9rem; }
+    .cyber-input {
+        width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+        padding: 12px; color: #fff; border-radius: 6px; box-sizing: border-box;
+        font-family: inherit;
+    }
+    .cyber-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 10px rgba(0,242,234,0.1); }
+    
+    .input-with-icon { position: relative; }
+    .input-with-icon i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-dim); }
+    .input-with-icon input { padding-left: 40px; text-align: left; direction: ltr; }
+
+    .form-row { display: flex; gap: 15px; }
+    .form-group.half { flex: 1; }
+
+    .checkbox-group { display: flex; gap: 20px; }
+    .cyber-checkbox { display: flex; align-items: center; cursor: pointer; position: relative; padding-right: 30px; }
+    .cyber-checkbox input { position: absolute; opacity: 0; }
+    .checkmark {
+        position: absolute; right: 0; top: 0;
+        height: 20px; width: 20px; background: rgba(255,255,255,0.1); border-radius: 4px;
+        transition: 0.2s;
+    }
+    .cyber-checkbox input:checked ~ .checkmark { background: var(--primary); }
+    .cyber-checkbox .checkmark:after {
+        content: ""; position: absolute; display: none;
+        left: 7px; top: 3px; width: 5px; height: 10px;
+        border: solid #000; border-width: 0 2px 2px 0; transform: rotate(45deg);
+    }
+    .cyber-checkbox input:checked ~ .checkmark:after { display: block; }
+    
+    .speed-control { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+    input[type=range] { width: 100%; accent-color: var(--primary); }
+    #speedLabel { font-size: 0.8rem; color: var(--primary); font-weight: bold; }
+
+    .modal-actions { display: flex; gap: 15px; margin-top: 30px; }
+    .modal-actions button { flex: 1; }
+</style>
+{% endblock %}

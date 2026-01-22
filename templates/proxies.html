@@ -1,0 +1,771 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Premium Typography -->
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;800;900&family=Inter:wght@300;400;600;700;800&family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
+<!-- SweetAlert2 Dark Theme -->
+<link href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@4/dark.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
+
+<!-- Animated Backdrop & Overlays -->
+<div class="cyber-bg">
+    <div class="cyber-grid"></div>
+    <div class="cyber-particles"></div>
+    <div class="cyber-scanlines"></div>
+</div>
+
+<div class="cyber-container fade-in" dir="rtl">
+    <!-- Header Section -->
+    <div class="page-header decorative-line">
+        <div class="header-content">
+            <h1><i class="fas fa-network-wired pulse-icon"></i> <span class="glitch-text" data-text="الشبكة والبروكسي">الشبكة والبروكسي</span></h1>
+            <p class="subtitle">إدارة عقد الاتصال الآمن // Secure Nodes</p>
+        </div>
+        <div class="header-actions">
+            <button onclick="openAddProxyModal()" class="cyber-btn primary">
+                <i class="fas fa-plus"></i> إضافة عقدة (Proxy)
+                <div class="btn-glow"></div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="stats-grid-simple">
+        <div class="stat-box-modern" data-target="{{ total_proxies }}">
+            <div class="icon-wrapper ops"><i class="fas fa-server"></i></div>
+            <div class="stat-content">
+                <span class="stat-value">{{ total_proxies }}</span>
+                <span class="stat-label">إجمالي الاتصالات</span>
+            </div>
+        </div>
+        <div class="stat-box-modern" data-target="{{ active_proxies }}">
+            <div class="icon-wrapper like"><i class="fas fa-signal"></i></div>
+            <div class="stat-content">
+                <span class="stat-value">{{ active_proxies }}</span>
+                <span class="stat-label">متصل (Active)</span>
+            </div>
+        </div>
+        <div class="stat-box-modern" data-target="{{ dead_proxies }}">
+            <div class="icon-wrapper check"><i class="fas fa-ban"></i></div>
+            <div class="stat-content">
+                <span class="stat-value">{{ dead_proxies }}</span>
+                <span class="stat-label">غير متصل (Dead)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Proxy List -->
+    <div class="main-dashboard">
+        <div class="glass-panel text-glow" style="overflow: visible;">
+            <div class="panel-header free-flow">
+                <h3><i class="fas fa-stream"></i> قائمة العناوين</h3>
+                <div class="panel-actions">
+                    <button class="cyber-btn sm danger" onclick="deleteDeadProxies()">
+                        <i class="fas fa-trash-alt"></i> تنظيف التالف
+                    </button>
+                    <button class="cyber-btn sm secondary" onclick="checkAllProxies()">
+                        <i class="fas fa-sync-alt"></i> فحص شامل
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-responsive custom-scrollbar">
+                <table class="cyber-table modern">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>العنوان (IP:Port)</th>
+                            <th>البروتوكول</th>
+                            <th>الحالة</th>
+                            <th>الأداء (Latency)</th>
+                            <th>آخر فحص</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for proxy in proxies %}
+                        <tr class="proxy-row">
+                            <td><span class="id-badge">#{{ proxy.id }}</span></td>
+                            <td class="font-mono">
+                                <span class="ip-addr">{{ proxy.proxy_string.split('@')[-1] if '@' in proxy.proxy_string else proxy.proxy_string }}</span>
+                                <button class="copy-btn" onclick="copyToClipboard('{{ proxy.proxy_string }}')" title="نسخ العنوان">
+                                    <i class="far fa-copy"></i>
+                                </button>
+                            </td>
+                            <td><span class="chip">HTTP/S</span></td>
+                            <td>
+                                {% if proxy.status == 'Active' %}
+                                    <span class="status-indicator online"><i class="fas fa-circle"></i> Active</span>
+                                {% elif proxy.status == 'Dead' %}
+                                    <span class="status-indicator offline"><i class="fas fa-times-circle"></i> Dead</span>
+                                {% else %}
+                                    <span class="status-indicator warning"><i class="fas fa-exclamation-circle"></i> {{ proxy.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="response-wrapper">
+                                {% if proxy.response_time > 0 %}
+                                    <div class="ping-text">{{ proxy.response_time }}ms</div>
+                                    <div class="ping-bar">
+                                        <div class="fill {% if proxy.response_time < 1000 %}bg-success{% elif proxy.response_time < 3000 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                             style="width: {% if proxy.response_time < 1000 %}100%{% elif proxy.response_time < 3000 %}70%{% else %}40%{% endif %}"></div>
+                                    </div>
+                                {% else %}
+                                    <span class="text-dim">--</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-dim text-sm">{{ proxy.last_checked.strftime('%H:%M | %Y-%m-%d') if proxy.last_checked else 'Never' }}</td>
+                            <td>
+                                <div class="action-group">
+                                    <button class="action-btn" onclick="checkProxy({{ proxy.id }})" title="فحص الاتصال">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                    <button class="action-btn delete" onclick="deleteProxy({{ proxy.id }})" title="حذف">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7">
+                                <div class="empty-state-modern">
+                                    <div class="empty-icon pulse-ghost"><i class="fas fa-network-wired"></i></div>
+                                    <h3>القائمة فارغة</h3>
+                                    <p>لم يتم إضافة أي سيرفرات بروكسي بعد.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Proxy Modal -->
+<div id="addProxyModal" class="cyber-modal">
+    <div class="modal-content premium-modal">
+        <div class="modal-header">
+            <h2><i class="fas fa-network-wired"></i> إضافة عقد اتصال جديدة</h2>
+            <button class="close-modal" onclick="closeAddProxyModal()"><i class="fas fa-times"></i></button>
+        </div>
+        
+        <!-- Tabs Nav -->
+        <div class="modal-tabs">
+            <div class="tab-item active" onclick="switchTab('bulk')"><i class="fas fa-layer-group"></i> إضافة جملة (Bulk)</div>
+            <div class="tab-item" onclick="switchTab('single')"><i class="fas fa-mouse-pointer"></i> إضافة مفردة</div>
+        </div>
+
+        <div class="modal-body custom-scrollbar">
+            <!-- Bulk Tab -->
+            <form action="/add_proxy" method="POST" id="bulkForm" class="tab-content active">
+                <input type="hidden" name="type" value="bulk">
+                <div class="form-group">
+                    <label>قائمة العناوين <span class="badge-tech">Recommended</span></label>
+                    <div class="input-with-icon full-height glow-focus">
+                        <i class="fas fa-code top-aligned"></i>
+                        <textarea name="proxy_list" rows="8" class="cyber-input code-font" 
+                                  placeholder="192.168.1.1:8080&#10;user:pass@192.168.1.1:8080" required></textarea>
+                    </div>
+                    <div class="helper-text-modern">
+                        <i class="fas fa-info-circle"></i> يقبل النظام التنسيقات التالية:
+                        <div class="examples">
+                            <code>ip:port</code>
+                            <code>user:pass@ip:port</code>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeAddProxyModal()" class="cyber-btn secondary">إلغاء</button>
+                    <button type="submit" class="cyber-btn primary glitch-effect">
+                        <i class="fas fa-save"></i> حفظ وإضافة للقاعدة
+                    </button>
+                </div>
+            </form>
+
+            <!-- Single Tab -->
+            <form action="/add_proxy" method="POST" id="singleForm" class="tab-content">
+                <input type="hidden" name="type" value="single">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>عنوان IP (Host)</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-globe"></i>
+                            <input type="text" name="host" class="cyber-input" placeholder="192.168.1.1">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>المنفذ (Port)</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-door-open"></i>
+                            <input type="number" name="port" class="cyber-input" placeholder="8080">
+                        </div>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>اسم المستخدم (اختياري)</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-user-shield"></i>
+                            <input type="text" name="user" class="cyber-input" placeholder="username">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>كلمة المرور (اختياري)</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-key"></i>
+                            <input type="text" name="pass" class="cyber-input" placeholder="password">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="preview-box">
+                    <label>معاينة العنوان:</label>
+                    <code id="proxyPreview" class="preview-code">--</code>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" onclick="closeAddProxyModal()" class="cyber-btn secondary">إلغاء</button>
+                    <button type="submit" class="cyber-btn primary">
+                        <i class="fas fa-plus"></i> إضافة العنوان
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Modal Improvements */
+.premium-modal {
+    max-width: 550px; padding: 0; overflow: hidden;
+    background: rgba(13, 15, 26, 0.95);
+    border: 1px solid rgba(0, 242, 234, 0.3);
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 242, 234, 0.1);
+    backdrop-filter: blur(20px);
+}
+.premium-modal .modal-header {
+    background: linear-gradient(90deg, rgba(0, 242, 234, 0.05), transparent);
+    padding: 20px 30px; border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.premium-modal .modal-header h2 { font-size: 1.4rem; letter-spacing: 1px; color: #fff; text-shadow: 0 0 10px rgba(0,242,234,0.4); }
+
+.modal-tabs { 
+    display: flex; background: rgba(0,0,0,0.3); padding: 4px; margin: 25px 30px 15px; border-radius: 12px; 
+    border: 1px solid rgba(255,255,255,0.05);
+}
+.tab-item { 
+    flex: 1; text-align: center; padding: 12px; cursor: pointer; color: var(--text-dim); transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+    border-radius: 8px; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 8px;
+    position: relative; overflow: hidden;
+}
+.tab-item:hover { color: #fff; background: rgba(255,255,255,0.02); }
+.tab-item.active { 
+    background: rgba(0, 242, 234, 0.1); color: #00f2ea; border: 1px solid rgba(0, 242, 234, 0.2);
+    box-shadow: 0 0 15px rgba(0, 242, 234, 0.1); font-weight: 700;
+}
+
+.modal-body { padding: 0 30px 30px; }
+.tab-content { display: none; animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+.tab-content.active { display: block; }
+@keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+.form-group label { color: #fff; font-size: 0.9rem; margin-bottom: 8px; display: block; font-weight: 500; }
+
+.input-with-icon { position: relative; transition: 0.3s; }
+.input-with-icon i { 
+    position: absolute; left: 15px; top: 50%; transform: translateY(-50%); 
+    color: var(--text-dim); transition: 0.3s; 
+}
+.input-with-icon i.top-aligned { top: 20px; transform: none; }
+
+.cyber-input {
+    width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); 
+    border-radius: 10px; padding: 12px 15px 12px 45px; color: #fff; font-size: 0.95rem;
+    transition: 0.3s;
+}
+.cyber-input:focus { 
+    background: rgba(0, 242, 234, 0.05); border-color: #00f2ea; outline: none; 
+    box-shadow: 0 0 15px rgba(0, 242, 234, 0.1);
+}
+.input-with-icon:focus-within i { color: #00f2ea; text-shadow: 0 0 8px rgba(0,242,234,0.5); }
+
+.helper-text-modern {
+    margin-top: 12px; background: rgba(0, 242, 234, 0.03); border: 1px solid rgba(0, 242, 234, 0.1); 
+    padding: 15px; border-radius: 10px; font-size: 0.85rem; color: #a0a0a0; display: flex; flex-direction: column; gap: 8px;
+}
+.helper-text-modern .examples { display: flex; gap: 10px; margin-top: 5px; flex-wrap: wrap; }
+.helper-text-modern code { 
+    background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 6px; 
+    color: #00f2ea; border: 1px solid rgba(0, 242, 234, 0.2); font-family: 'Consolas', monospace;
+}
+
+.badge-tech {
+    background: rgba(0, 255, 136, 0.1); color: #00ff88; font-size: 0.7rem; padding: 2px 6px; 
+    border-radius: 4px; border: 1px solid rgba(0, 255, 136, 0.3); margin-right: 8px;
+}
+
+.preview-box {
+    margin-top: 15px; padding: 15px; background: #000; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+}
+.preview-box label { display: block; font-size: 0.8rem; color: var(--text-dim); margin-bottom: 5px; }
+.preview-code { color: var(--secondary); font-family: 'Consolas', monospace; display: block; word-break: break-all; }
+</style>
+
+<script>
+    // Stats Animation & Toast Mixin
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        background: '#131520',
+        color: '#fff',
+        iconColor: '#00f2ea',
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer)
+            toast.addEventListener('mouseleave', Swal.resumeTimer)
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const stats = document.querySelectorAll('.stat-box-modern');
+        stats.forEach(box => {
+            const target = parseInt(box.getAttribute('data-target')) || 0;
+            const display = box.querySelector('.stat-value');
+            display.innerText = target; 
+        });
+    });
+
+    function openAddProxyModal() {
+        document.getElementById('addProxyModal').style.display = 'flex';
+        setTimeout(() => document.getElementById('addProxyModal').classList.add('active'), 10);
+    }
+    
+    function closeAddProxyModal() {
+        document.getElementById('addProxyModal').classList.remove('active');
+        setTimeout(() => document.getElementById('addProxyModal').style.display = 'none', 300);
+    }
+
+    function switchTab(tabName) {
+        // Nav Links
+        document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+        
+        // Content
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabName === 'bulk' ? 'bulkForm' : 'singleForm').classList.add('active');
+    }
+
+    // Dynamic Preview for Single Entry
+    document.addEventListener('input', (e) => {
+        if(e.target.closest('#singleForm')) {
+            const form = document.getElementById('singleForm');
+            const host = form.elements['host'].value.trim();
+            const port = form.elements['port'].value.trim();
+            const user = form.elements['user'].value.trim();
+            const pass = form.elements['pass'].value.trim();
+            
+            let result = '--';
+            if(host && port) {
+                if(user && pass) {
+                    result = `${user}:${pass}@${host}:${port}`;
+                } else {
+                    result = `${host}:${port}`;
+                }
+            }
+            document.getElementById('proxyPreview').textContent = result;
+        }
+    });
+
+    
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            Toast.fire({
+                icon: 'success',
+                title: 'تم نسخ البروكسي الحافظة'
+            });
+            const el = event.currentTarget;
+            const originalHTML = el.innerHTML;
+            el.innerHTML = '<i class="fas fa-check" style="color:#00ff88"></i>';
+            setTimeout(() => { el.innerHTML = originalHTML; }, 1000);
+        });
+    }
+    
+    function deleteProxy(id) {
+        Swal.fire({
+            title: 'هل أنت متأكد؟',
+            text: "لن تتمكن من استرجاع هذا البروكسي!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ff5f5f',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'نعم، احذفه!',
+            cancelButtonText: 'إلغاء',
+            background: '#1a1d2e'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/delete_proxy/${id}`, {method: 'DELETE'})
+                    .then(r => r.json())
+                    .then(data => {
+                        if(data.success) {
+                            const row = document.querySelector(`button[onclick="deleteProxy(${id})"]`).closest('tr');
+                            row.style.transform = 'translateX(100px)';
+                            row.style.opacity = '0';
+                            setTimeout(() => row.remove(), 300);
+                            Toast.fire({ icon: 'success', title: 'تم الحذف بنجاح' });
+                        } else {
+                            Toast.fire({ icon: 'error', title: 'حدث خطأ أثناء الحذف' });
+                        }
+                    });
+            }
+        })
+    }
+
+    function checkProxy(id) {
+        const btn = event.currentTarget;
+        const icon = btn.querySelector('i');
+        const originalClass = icon.className;
+        icon.className = 'fas fa-spinner fa-spin';
+        
+        fetch(`/check_proxy/${id}`)
+            .then(r => r.json())
+            .then(data => {
+                icon.className = originalClass; 
+                
+                if(data.success) {
+                    const row = btn.closest('tr');
+                    const statusCell = row.cells[3];
+                    const timeCell = row.querySelector('.response-wrapper');
+                    const lastCheckedCell = row.cells[5];
+                    
+                    // Update Status Badge
+                    if(data.status === 'Active') {
+                        statusCell.innerHTML = '<span class="status-indicator online"><i class="fas fa-circle"></i> Active</span>';
+                        Toast.fire({ icon: 'success', title: `بروكسي نشط! (${data.time}ms)` });
+                    } else {
+                        statusCell.innerHTML = '<span class="status-indicator offline"><i class="fas fa-times-circle"></i> Dead</span>';
+                        Toast.fire({ icon: 'error', title: 'بروكسي لا يعمل!' });
+                    }
+                    
+                    // Update Time Visuals
+                    let colorClass = 'bg-success';
+                    let width = '100%';
+                    if(data.time > 1000) { colorClass = 'bg-warning'; width = '70%'; }
+                    if(data.time > 3000) { colorClass = 'bg-danger'; width = '40%'; }
+                    if(data.status === 'Dead') { width = '5%'; colorClass = 'bg-danger'; }
+
+                    timeCell.innerHTML = `
+                        <div class="ping-text">${data.time}ms</div>
+                        <div class="ping-bar"><div class="fill ${colorClass}" style="width: ${width}"></div></div>
+                    `;
+                    
+                    // Update Last Checked
+                    const now = new Date();
+                    lastCheckedCell.textContent = now.toISOString().slice(11,16) + ' | ' + now.toISOString().slice(0,10);
+                } else {
+                    Toast.fire({ icon: 'error', title: 'فشل فحص البروكسي' });
+                }
+            })
+            .catch(err => {
+                icon.className = 'fas fa-exclamation-triangle';
+                console.error(err);
+                Toast.fire({ icon: 'error', title: 'خطأ في الاتصال' });
+            });
+    }
+
+    function checkAllProxies() {
+        Swal.fire({
+            title: 'بدء فحص شامل؟',
+            text: "سيتم فحص جميع البروكسيات في الخلفية.",
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'نعم، ابدأ الفحص',
+            cancelButtonText: 'إلغاء',
+            background: '#1a1d2e'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch('/check_all_proxies')
+                    .then(r => r.json())
+                    .then(data => {
+                        Swal.fire({
+                            title: 'تم البدء!',
+                            text: 'عملية الفحص تجري الآن في الخلفية.',
+                            icon: 'success',
+                            background: '#1a1d2e',
+                            confirmButtonColor: '#00f2ea'
+                        });
+                    });
+            }
+        });
+    }
+    
+    function deleteDeadProxies() {
+        Swal.fire({
+            title: 'حذف جميع التالفة؟',
+            text: "سيتم حذف جميع البروكسيات ذات الحالة Dead.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ff5f5f',
+            confirmButtonText: 'نعم، نظف القائمة',
+            cancelButtonText: 'إلغاء',
+            background: '#1a1d2e'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch('/delete_dead_proxies', {method: 'POST'})
+                    .then(r => r.json())
+                    .then(data => {
+                        Swal.fire({
+                            title: 'تم التنظيف!',
+                            text: `تم حذف ${data.count} بروكسي تالف.`,
+                            icon: 'success',
+                            background: '#1a1d2e'
+                        }).then(() => location.reload());
+                    });
+            }
+        });
+    }
+</script>
+
+<style>
+/* --- OPTIMIZED CYBERPUNK STYLES --- */
+:root {
+    --primary: #00f2ea;
+    --primary-dim: rgba(0, 242, 234, 0.15);
+    --secondary: #ff0055;
+    --bg-dark: #02040a;
+    --panel-bg: rgba(8, 10, 16, 0.92); /* Higher opacity for less blurring work */
+    --text-main: #ffffff;
+    --text-dim: #94a3b8;
+}
+
+/* Container & Layout */
+.cyber-container { padding: 30px; max-width: 1600px; margin: 0 auto; position: relative; z-index: 10; }
+.page-header { 
+    display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; 
+    padding-bottom: 20px; border-bottom: 1px solid rgba(0, 242, 234, 0.2); 
+    position: relative;
+    contain: layout style; /* Performance Optimization */
+}
+.page-header::after {
+    content: ''; position: absolute; bottom: -1px; left: 0; width: 30%; height: 1px;
+    background: linear-gradient(90deg, var(--primary), transparent);
+    box-shadow: 0 0 10px var(--primary); /* Reduced shadow spread */
+}
+
+.header-content h1 { 
+    margin: 0; font-size: 2.5rem; color: #fff; text-transform: uppercase; letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(0,242,234,0.4); /* Reduced spread */
+    font-family: 'Orbitron', sans-serif; 
+}
+.subtitle { 
+    color: var(--primary); margin: 10px 0 0 0; font-family: 'Consolas', monospace; 
+    font-size: 0.9rem; letter-spacing: 4px; text-transform: uppercase; opacity: 0.8;
+}
+
+/* Stats Grid */
+.stats-grid-simple { 
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; margin-bottom: 40px; 
+}
+.stat-box-modern { 
+    background: linear-gradient(145deg, rgba(20,20,30,0.8), rgba(10,10,15,0.95)); /* More opaque */
+    border: 1px solid rgba(255,255,255,0.05); border-left: 3px solid var(--primary);
+    border-radius: 4px; padding: 25px; display: flex; align-items: center; gap: 25px; 
+    position: relative; overflow: hidden; 
+    /* Removed expensive backdrop-filter */
+    transition: transform 0.3s ease, border-color 0.3s ease; 
+    contain: paint;
+}
+.stat-box-modern::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(45deg, transparent 40%, rgba(0,242,234,0.05) 50%, transparent 60%);
+    background-size: 200% 200%; transition: 0.5s; opacity: 0;
+    pointer-events: none;
+}
+.stat-box-modern:hover { transform: translateY(-3px); border-color: var(--primary); }
+.stat-box-modern:hover::before { opacity: 1; animation: shine 1s; }
+
+.icon-wrapper { 
+    width: 60px; height: 60px; border-radius: 8px; display: flex; align-items: center; justify-content: center; 
+    font-size: 1.8rem; background: rgba(255,255,255,0.03); 
+    /* Simplified clip-path */
+    clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
+}
+.icon-wrapper.ops { color: var(--primary); }
+.icon-wrapper.like { color: #00ff88; }
+.icon-wrapper.check { color: #ff5f5f; }
+
+.stat-value { font-size: 2.2rem; font-weight: 800; color: #fff; font-family: 'Orbitron', sans-serif; line-height: 1; }
+.stat-label { font-size: 0.9rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; }
+
+/* OPTIMIZED BUTTONS */
+.cyber-btn {
+    position: relative; outline: none; border: none; cursor: pointer;
+    font-family: 'Orbitron', sans-serif; text-transform: uppercase; letter-spacing: 1px;
+    clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
+    transition: transform 0.2s, background-color 0.2s; 
+    display: inline-flex; align-items: center; justify-content: center;
+    will-change: transform;
+}
+
+/* Primary Button */
+.cyber-btn.primary {
+    background: var(--primary); color: #000; padding: 12px 30px; font-weight: 900;
+}
+.cyber-btn.primary:hover {
+    background: #fff; color: var(--primary);
+    box-shadow: 0 0 20px var(--primary); /* Reduced shadow */
+}
+
+/* Secondary/Small Buttons */
+.cyber-btn.sm { 
+    padding: 8px 20px; font-size: 0.8rem; clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+.cyber-btn.secondary { background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.1); }
+.cyber-btn.secondary:hover { background: rgba(255,255,255,0.15); border-color: #fff; color: #fff; }
+
+.cyber-btn.danger { background: rgba(255, 95, 95, 0.1); color: #ff5f5f; border: 1px solid rgba(255, 95, 95, 0.3); }
+.cyber-btn.danger:hover { background: #ff5f5f; color: #000; }
+
+/* Action Buttons */
+.action-btn { 
+    width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: var(--text-dim);
+    clip-path: polygon(30% 0, 100% 0, 100% 70%, 70% 100%, 0 100%, 0 30%);
+    transition: 0.2s; cursor: pointer;
+}
+.action-btn:hover { background: var(--primary); color: #000; transform: scale(1.1); box-shadow: 0 0 10px var(--primary); border-color: transparent; }
+.action-btn.delete:hover { background: #ff5f5f; color: #000; box-shadow: 0 0 10px #ff5f5f; }
+
+/* Table Styling - Use Opacity instead of Blur */
+.glass-panel { 
+    background: rgba(10, 12, 18, 0.95); /* Opaque background for performance */
+    border: 1px solid rgba(0, 242, 234, 0.1); 
+    box-shadow: 0 0 30px rgba(0,0,0,0.5); 
+    position: relative; overflow: hidden;
+    /* Removed backdrop-filter */
+}
+.glass-panel::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+}
+
+.panel-header { padding: 25px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
+.panel-header h3 { font-family: 'Orbitron'; letter-spacing: 1px; color: #fff; display: flex; align-items: center; gap: 10px; }
+
+.cyber-table { width: 100%; border-collapse: separate; border-spacing: 0 5px; }
+.cyber-table th { padding: 15px 25px; text-align: right; color: var(--text-dim); font-size: 0.85rem; letter-spacing: 1px; text-transform: uppercase; }
+.cyber-table tbody tr { background: rgba(255,255,255,0.02); transition: 0.2s; contain: layout; }
+.cyber-table tbody tr:hover { background: rgba(0, 242, 234, 0.05); transform: scale(1.002); }
+.cyber-table td { padding: 15px 25px; color: #e0e0e0; vertical-align: middle; border-top: 1px solid rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.02); }
+.cyber-table td:first-child { border-left: 2px solid transparent; border-top-left-radius: 4px; border-bottom-left-radius: 4px; }
+.cyber-table tbody tr:hover td:first-child { border-left-color: var(--primary); }
+
+.id-badge { font-family: 'Consolas'; color: var(--primary); background: rgba(0, 242, 234, 0.1); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(0, 242, 234, 0.2); }
+.ip-addr { font-family: 'Consolas'; font-size: 0.95rem; color: #fff; letter-spacing: 0.5px; }
+
+/* Status Badges */
+.status-indicator { 
+    display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; 
+    border-radius: 30px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+}
+.status-indicator.online { background: rgba(0, 255, 136, 0.1); color: #00ff88; border: 1px solid rgba(0,255,136,0.2); }
+.status-indicator.offline { background: rgba(255, 0, 85, 0.1); color: #ff0055; border: 1px solid rgba(255,0,85,0.2); }
+
+/* MODAL Optimized */
+.cyber-modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85); 
+    /* Reduced blur from 10px to 5px, or remove entirely if needed */
+    backdrop-filter: blur(4px);
+    z-index: 2000; display: none; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.3s;
+}
+.cyber-modal.active { opacity: 1; }
+
+.premium-modal {
+    background: rgba(10, 12, 16, 0.98); /* Almost solid background */
+    width: 600px; max-width: 95%;
+    border: 1px solid var(--primary); 
+    box-shadow: 0 0 30px rgba(0, 242, 234, 0.1); /* Reduced shadow */
+    clip-path: polygon(0 0, 100% 0, 100% 85%, 95% 100%, 0 100%);
+    position: relative; transform: scale(0.95); transition: 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+    /* Removed modal-level backdrop filter */
+}
+.cyber-modal.active .premium-modal { transform: scale(1); }
+
+.premium-modal::before {
+    content: 'SYSTEM_OVERRIDE'; position: absolute; top: 10px; right: 10px;
+    font-size: 0.6rem; color: var(--primary); opacity: 0.5; letter-spacing: 2px;
+}
+
+.modal-header { padding: 30px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.modal-header h2 { margin: 0; font-family: 'Orbitron'; color: #fff; font-size: 1.5rem; }
+
+.modal-tabs { display: flex; gap: 10px; padding: 20px 30px 0; }
+.tab-item { 
+    flex: 1; padding: 15px; background: rgba(255,255,255,0.03); color: var(--text-dim); text-align: center; 
+    cursor: pointer; transition: 0.2s; font-family: 'Consolas'; font-size: 0.9rem; clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px);
+}
+.tab-item.active { background: var(--primary-dim); color: var(--primary); border-top: 2px solid var(--primary); }
+
+.modal-body { padding: 30px; }
+.form-group label { display: block; color: #fff; margin-bottom: 10px; font-size: 0.9rem; letter-spacing: 0.5px; }
+.cyber-input { 
+    width: 100%; background: #000; border: 1px solid #333; color: var(--primary);
+    padding: 15px; font-family: 'Consolas', monospace; font-size: 1rem; border-radius: 4px;
+    transition: 0.2s;
+}
+.cyber-input:focus { border-color: var(--primary); box-shadow: 0 0 15px rgba(0, 242, 234, 0.1); outline: none; }
+
+.modal-actions { display: flex; justify-content: flex-end; gap: 15px; margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.05); }
+
+/* SweetAlert Optimized */
+.swal2-popup { background: #0a0c10 !important; border: 1px solid var(--primary) !important; color: #fff !important; }
+.swal2-title { font-family: 'Orbitron' !important; color: var(--primary) !important; }
+.swal2-confirm { background: var(--primary) !important; color: #000 !important; font-weight: bold !important; box-shadow: none !important; }
+.swal2-cancel { background: #333 !important; color: #fff !important; }
+
+/* UTILITY / EFFECTS */
+.glitch-text { position: relative; }
+/* Reduced Glitch Complexity and Frequency */
+.glitch-text::before, .glitch-text::after {
+    content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0;
+}
+.glitch-text:hover::before { opacity: 1; left: 2px; text-shadow: -1px 0 #ff0055; animation: glitch-anim 0.3s infinite linear alternate-reverse; }
+.glitch-text:hover::after { opacity: 1; left: -2px; text-shadow: -1px 0 #00f2ea; animation: glitch-anim2 0.3s infinite linear alternate-reverse; }
+
+.pulse-icon { animation: pulse 3s infinite; color: var(--primary); }
+
+@keyframes shine { 100% { left: 125%; } }
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+@keyframes glitch-anim { 0% { clip: rect(85px, 9999px, 86px, 0); } 100% { clip: rect(48px, 9999px, 12px, 0); } }
+@keyframes glitch-anim2 { 0% { clip: rect(45px, 9999px, 10px, 0); } 100% { clip: rect(138px, 9999px, 90px, 0); } }
+
+/* Scrollbar */
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 3px; }
+
+.fade-in { animation: fadeIn 0.5s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Latency / Ping Utilities */
+.bg-success { background: #00ff88 !important; }
+.bg-warning { background: #ffbd2e !important; }
+.bg-danger { background: #ff5f5f !important; }
+
+.ping-bar { 
+    width: 100%; max-width: 120px; height: 8px; 
+    background: rgba(255,255,255,0.05); border-radius: 2px; 
+    overflow: hidden; margin-top: 5px; position: relative;
+    mask-image: linear-gradient(90deg, #000 2px, transparent 0);
+    mask-size: 4px 100%;
+}
+.ping-bar .fill { 
+    height: 100%; border-radius: 2px; transition: width 0.5s ease;
+}
+</style>
+{% endblock %}

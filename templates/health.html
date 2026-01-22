@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Link CSS -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/health.css') }}">
+
+<!-- Health Header -->
+<div class="health-header">
+    <h2><i class="fas fa-heartbeat"></i> عيادة الحسابات</h2>
+    <p>نظام فحص شامل ومتقدم لصحة حسابات تويتر - راقب، فحص، وحلل حساباتك بكل سهولة</p>
+</div>
+
+<!-- Action Bar -->
+<div class="action-bar">
+    <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchInput" placeholder="ابحث عن حساب...">
+    </div>
+    
+    <div class="filter-group">
+        <button class="filter-btn active" data-filter="all">
+            <i class="fas fa-list"></i> الكل
+        </button>
+        <button class="filter-btn" data-filter="healthy">
+            <i class="fas fa-check-circle"></i> سليمة
+        </button>
+        <button class="filter-btn" data-filter="suspended">
+            <i class="fas fa-exclamation-triangle"></i> معلقة
+        </button>
+        <button class="filter-btn" data-filter="locked">
+            <i class="fas fa-lock"></i> مقفلة
+        </button>
+        <button class="filter-btn" data-filter="unknown">
+            <i class="fas fa-question-circle"></i> غير معروفة
+        </button>
+    </div>
+    
+    <div class="action-buttons">
+        <button class="btn-health btn-health-primary" onclick="checkAllAccounts()">
+            <i class="fas fa-stethoscope"></i> فحص الكل
+        </button>
+        <button class="btn-health btn-health-secondary bulk-action-btn" onclick="checkSelectedAccounts()" disabled>
+            <i class="fas fa-check-double"></i> فحص المحددة
+        </button>
+        <button class="btn-health btn-health-secondary" onclick="exportReport()">
+            <i class="fas fa-download"></i> تصدير التقرير
+        </button>
+    </div>
+</div>
+
+<!-- Progress Container -->
+<div id="progressContainer" class="progress-container">
+    <div class="progress-info">
+        <span id="progressText" class="progress-text">جاري الفحص...</span>
+        <span id="progressPercentage" class="progress-percentage">0%</span>
+    </div>
+    <div class="progress-bar-wrapper">
+        <div id="progressBar" class="progress-bar-fill"></div>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="health-stats">
+    <div class="stat-card healthy">
+        <div class="stat-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="stat-number" id="healthyCount">{{ healthy }}</div>
+        <div class="stat-label">حسابات سليمة</div>
+        <div class="stat-trend">
+            <i class="fas fa-arrow-up" style="color: var(--health-success);"></i>
+            <span style="color: var(--health-success);">جيد</span>
+        </div>
+    </div>
+    
+    <div class="stat-card issues">
+        <div class="stat-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="stat-number" id="issuesCount">{{ issues }}</div>
+        <div class="stat-label">حسابات بها مشاكل</div>
+        <div class="stat-trend">
+            <i class="fas fa-info-circle" style="color: var(--health-muted);"></i>
+            <span style="color: var(--health-muted);">تحتاج متابعة</span>
+        </div>
+    </div>
+    
+    <div class="stat-card total">
+        <div class="stat-icon">
+            <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-number" id="totalCount">{{ accounts|length }}</div>
+        <div class="stat-label">إجمالي الحسابات</div>
+        <div class="stat-trend">
+            <i class="fas fa-database" style="color: var(--health-info);"></i>
+            <span style="color: var(--health-info);">في النظام</span>
+        </div>
+    </div>
+    
+    <div class="stat-card percentage">
+        <div class="stat-icon">
+            <i class="fas fa-chart-pie"></i>
+        </div>
+        <div class="stat-number" id="healthPercentage">
+            {% if accounts|length > 0 %}
+                {{ ((healthy / accounts|length) * 100)|round|int }}%
+            {% else %}
+                0%
+            {% endif %}
+        </div>
+        <div class="stat-label">نسبة الصحة</div>
+        <div class="stat-trend">
+            <i class="fas fa-heartbeat" style="color: var(--health-primary);"></i>
+            <span style="color: var(--health-primary);">معدل الصحة</span>
+        </div>
+    </div>
+</div>
+
+<!-- Recommendations Section -->
+<div id="recommendationsContainer" class="recommendations-container" style="display: none; margin-bottom: 2rem;">
+    <!-- Rendered via JS -->
+</div>
+
+<!-- Charts Section -->
+<div class="charts-section">
+    <div class="chart-card">
+        <h3><i class="fas fa-chart-pie"></i> توزيع حالات الحسابات</h3>
+        <div class="chart-container">
+            <canvas id="statusChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="chart-card">
+        <h3><i class="fas fa-chart-line"></i> اتجاه الصحة الأسبوعي</h3>
+        <div class="chart-container">
+            <canvas id="trendChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Selection Header -->
+<div class="action-bar" style="margin-top: 2rem;">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+        <input type="checkbox" id="selectAll" class="account-checkbox" style="width: 20px; height: 20px;">
+        <label for="selectAll" style="color: var(--health-text); font-weight: 600; cursor: pointer;">
+            تحديد/إلغاء تحديد الكل
+        </label>
+    </div>
+</div>
+
+<!-- Accounts Grid -->
+<div id="accountsGrid" class="accounts-grid">
+    {% for account in accounts %}
+    <div class="account-health-card status-{{ account.health_status|lower|replace(' ', '-') }} fade-in" 
+         data-account-id="{{ account.id }}" 
+         data-username="{{ account.username }}" 
+         data-status="{{ account.health_status|lower }}">
+        
+        <div class="account-header">
+            <input type="checkbox" 
+                   class="account-checkbox" 
+                   data-account-id="{{ account.id }}"
+                   data-username="{{ account.username }}">
+            
+            <div class="account-avatar">
+                {% if account.profile_image_url %}
+                <img src="{{ account.profile_image_url }}" alt="{{ account.username }}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">
+                {% else %}
+                <i class="fab fa-twitter"></i>
+                {% endif %}
+            </div>
+            
+            <div class="account-info">
+                {% if account.display_name %}
+                <div class="account-username">{{ account.display_name }}</div>
+                <div class="account-date" style="margin-top: 2px;">
+                    <i class="fab fa-twitter" style="font-size: 10px;"></i>
+                    @{{ account.username.replace('@','') }}
+                </div>
+                {% else %}
+                <div class="account-username">@{{ account.username }}</div>
+                <div class="account-date">
+                    <i class="fas fa-calendar"></i>
+                    {{ account.created_at.strftime('%Y-%m-%d') if account.created_at else 'N/A' }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="status-badge {{ account.health_status|lower|replace(' ', '-') }}">
+            {% if account.health_status == 'Healthy' %}
+                <i class="fas fa-check-circle"></i> سليم
+            {% elif account.health_status == 'Suspended' %}
+                <i class="fas fa-exclamation-triangle"></i> معلق
+            {% elif account.health_status == 'Locked' %}
+                <i class="fas fa-lock"></i> مقفل
+            {% elif account.health_status == 'Invalid Cookies' %}
+                <i class="fas fa-exclamation-triangle"></i> كوكيز غير صالحة
+            {% else %}
+                <i class="fas fa-question-circle"></i> غير معروف
+            {% endif %}
+        </div>
+        
+        <div class="last-check">
+            <i class="fas fa-history"></i>
+            <span>آخر فحص:</span>
+            <span class="last-check-time">
+                {{ account.last_health_check.strftime('%Y-%m-%d %H:%M') if account.last_health_check else 'لم يتم الفحص' }}
+            </span>
+        </div>
+        
+        <button class="check-button" onclick="checkHealth({{ account.id }})">
+            <i class="fas fa-stethoscope"></i>
+            فحص الآن
+        </button>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Empty State -->
+<div id="emptyState" class="empty-state" style="display: none;">
+    <i class="fas fa-search"></i>
+    <h3>لا توجد نتائج</h3>
+    <p>لم يتم العثور على حسابات تطابق البحث أو الفلتر المحدد</p>
+</div>
+
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<!-- Health JavaScript -->
+<script src="{{ url_for('static', filename='js/health.js') }}"></script>
+
+{% endblock %}
